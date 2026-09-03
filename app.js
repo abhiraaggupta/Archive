@@ -1,1572 +1,434 @@
-/* ============================================================
-   ARCHIVE — MAIN APPLICATION
-   Version 3.1
-   ============================================================ */
-
 "use strict";
-
-/* ============================================================
-   CONFIGURATION
-   ============================================================ */
-
-const CONFIG = {
+const CONFIG = Object.freeze({
+    photosPath: "assets/photos/",
+    videosPath: "assets/videos/",
+    musicPath: "assets/music/",
+    thumbnailsPath: "assets/music/thumbnails/",
     totalPhotos: 22,
     totalVideos: 19,
     totalSongs: 26,
-
-    transitionDuration: 420,
-
-    storageKey: "archiveAnalytics",
-    sessionKey: "archiveCurrentSession",
-
+    photoPng: new Set([
+        4, 
+        11,
+        12,
+        13,
+        16,
+    ]),
+    hoverDelay: 500,
+    transitionDuration: 280,
+    analyticsSaveInterval: 5000,
+    timerInterval: 1000,
+    minZoom: 1,
+    maxZoom: 3,
+    zoomStep: 0.1,
     defaultVolume: 0.8,
-
-    photoPath: "assets/photos/",
-    videoPath: "assets/videos/",
-    musicPath: "assets/music/",
-    thumbnailPath: "assets/music/thumbnails/"
-};
-
-
-/* ============================================================
-   SONG LIBRARY
-   ============================================================ */
-
-const songs = [
-    {
-        id: 1,
-        name: "Nasha",
-        file: "A1.mp4",
-        thumbnail: "1.png"
-    },
-    {
-        id: 2,
-        name: "Into you",
-        file: "B2.mp4",
-        thumbnail: "2.png"
-    },
-    {
-        id: 3,
-        name: "Ajab sa",
-        file: "C3.mp4",
-        thumbnail: "3.png"
-    },
-    {
-        id: 4,
-        name: "Dewaaniyat",
-        file: "D4.mp4",
-        thumbnail: "4.png"
-    },
-    {
-        id: 5,
-        name: "Inna sona",
-        file: "E5.mp4",
-        thumbnail: "5.png"
-    },
-    {
-        id: 6,
-        name: "Ishq Bullava",
-        file: "F6.mp4",
-        thumbnail: "6.png"
-    },
-    {
-        id: 7,
-        name: "Kalyani",
-        file: "G7.mp4",
-        thumbnail: "7.png"
-    },
-    {
-        id: 8,
-        name: "Bol na halke halke",
-        file: "H8.mp4",
-        thumbnail: "8.png"
-    },
-    {
-        id: 9,
-        name: "Mera yaar",
-        file: "I9.mp4",
-        thumbnail: "9.png"
-    },
-    {
-        id: 10,
-        name: "Fakira",
-        file: "J10.mp4",
-        thumbnail: "10.png"
-    },
-    {
-        id: 11,
-        name: "Ter bin",
-        file: "K11.mp4",
-        thumbnail: "11.png"
-    },
-    {
-        id: 12,
-        name: "Tere jiya hor disda",
-        file: "L12.mp4",
-        thumbnail: "12.png"
-    },
-    {
-        id: 13,
-        name: "Teri narron ke sadke",
-        file: "M13.mp4",
-        thumbnail: "13.png"
-    },
-    {
-        id: 14,
-        name: "Teri bin",
-        file: "N14.mp4",
-        thumbnail: "14.png"
-    },
-    {
-        id: 15,
-        name: "Aarzu",
-        file: "O15.mp4",
-        thumbnail: "15.png"
-    },
-    {
-        id: 16,
-        name: "Teri narzon ke karan",
-        file: "P16.mp4",
-        thumbnail: "16.png"
-    },
-    {
-        id: 17,
-        name: "Dil diya gallan",
-        file: "Q17.mp4",
-        thumbnail: "17.png"
-    },
-    {
-        id: 18,
-        name: "Gallan Goodiyan",
-        file: "R18.mp4",
-        thumbnail: "18.png"
-    },
-    {
-        id: 19,
-        name: "Maula maula re",
-        file: "S19.mp4",
-        thumbnail: "19.png"
-    },
-    {
-        id: 20,
-        name: "O rangrez",
-        file: "T20.mp4",
-        thumbnail: "20.png"
-    },
-    {
-        id: 21,
-        name: "Paniyon sa",
-        file: "U21.mp4",
-        thumbnail: "21.png"
-    },
-    {
-        id: 22,
-        name: "Tere mast mast do nain",
-        file: "V22.mp4",
-        thumbnail: "22.png"
-    },
-    {
-        id: 23,
-        name: "Sajda",
-        file: "W23.mp4",
-        thumbnail: "23.png"
-    },
-    {
-        id: 24,
-        name: "Ve haaniyan",
-        file: "X24.mp4",
-        thumbnail: "24.png"
-    },
-    {
-        id: 25,
-        name: "Heeriye",
-        file: "Y25.mp4",
-        thumbnail: "25.png"
-    },
-    {
-        id: 26,
-        name: "New song",
-        file: "Z26.mp4",
-        thumbnail: "26.png"
+    storage: {
+        analytics: "archive_analytics_v3",
+        preferences: "archive_preferences_v3"
     }
+});
+const SONG_NAMES = [
+    "Nasha",
+    "Into you",
+    "Ajab sa",
+    "Dewaaniyat",
+    "Inna sona",
+    "Ishq Bullava",
+    "Kalyani",
+    "Bol na halke halke",
+    "Mera yaar",
+    "Fakira",
+    "Ter bin",
+    "Tere jiya hor disda",
+    "Teri narron ke sadke",
+    "Teri bin",
+    "Aarzu",
+    "Teri narzon ke karan",
+    "Dil diya gallan",
+    "Gallan Goodiyan",
+    "Maula maula re",
+    "O rangrez",
+    "Paniyon sa",
+    "Tere mast mast do nain",
+    "Sajda",
+    "Ve haaniyan",
+    "Heeriye",
+    "New song"
 ];
-
-
-/* ============================================================
-   MEDIA LIBRARY
-   ============================================================ */
-
-const photos = [];
-
-for (let i = 1; i <= CONFIG.totalPhotos; i++) {
-
-    let extension = "jpg";
-
-    if ([4, 11, 12, 13, 16].includes(i)) {
-        extension = "png";
-    }
-
-    photos.push({
-        id: `photo-${i}`,
-        type: "photo",
-        index: i,
-        name: `PHOTO ${i}`,
-        file: `${i}.${extension}`,
-        path: `${CONFIG.photoPath}${i}.${extension}`
-    });
-}
-
-
-const videoLetters = [
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "J",
-    "K",
-    "L",
-    "M",
-    "N",
-    "O",
-    "P",
-    "Q",
-    "R",
-    "S"
-];
-
-
-const videos = videoLetters.map(
-    (letter, index) => {
-
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const songs = ALPHABET.map((letter, index) => {
+    const number = index + 1;
+    return {
+        id: `${letter}${number}`,
+        name: SONG_NAMES[index],
+        file: `${letter}${number}.mp4`,
+        path: `${CONFIG.musicPath}${letter}${number}.mp4`,
+        thumbnail: `${CONFIG.thumbnailsPath}${number}.png`,
+        trackNumber: number
+    };
+});
+const photos = Array.from(
+    { length: CONFIG.totalPhotos },
+    (_, index) => {
         const number = index + 1;
-
+        const extension =
+            CONFIG.photoPng.has(number)
+                ? "png"
+                : "jpg";
         return {
-            id: `video-${letter}`,
-            type: "video",
-            index: number,
-            name: `VIDEO ${letter}`,
-            file: `${letter}.mp4`,
-            path: `${CONFIG.videoPath}${letter}.mp4`
+            id: `photo-${number}`,
+            type: "photo",
+            name: `Photo ${number}`,
+            file: `${number}.${extension}`,
+            path: `${CONFIG.photosPath}${number}.${extension}`,
+            number
         };
     }
 );
-
-
+const videos = ALPHABET
+    .slice(0, CONFIG.totalVideos)
+    .map(letter => ({
+        id: `video-${letter}`,
+        type: "video",
+        name: `Video ${letter}`,
+        file: `${letter}.mp4`,
+        path: `${CONFIG.videosPath}${letter}.mp4`,
+        letter
+    }));
 const mediaLibrary = [
     ...photos,
     ...videos
 ];
-
-
-/* ============================================================
-   APPLICATION STATE
-   ============================================================ */
-
-const state = {
-
-    currentScreen: "music",
-
-    selectedSong: null,
-    currentSongIndex: null,
-
-    currentMediaIndex: 0,
-
-    zoom: 1,
-
-    volume: CONFIG.defaultVolume,
-    muted: false,
-
-    viewMode: "grid",
-
-    sessionStarted: false,
-    sessionStartTime: null,
-
-    mediaStartTime: null,
-    mediaElapsedSeconds: 0,
-
-    currentMediaWatchTime: 0,
-
-    dashboardReturnScreen: "viewer",
-
-    selectedDashboardMonth: null
-};
-
-
-/* ============================================================
-   ANALYTICS
-   ============================================================ */
-
-let analytics = {
-    sessions: [],
-    media: {},
-    daily: {}
-};
-
-
-/* ============================================================
-   DOM REFERENCES
-   ============================================================ */
-
-const elements = {};
-
-
 function $(id) {
-
     return document.getElementById(id);
 }
-
-
-function on(
-    element,
-    event,
-    handler
-) {
-
-    if (!element) {
-        return;
-    }
-
-    element.addEventListener(
-        event,
-        handler
-    );
+function qs(selector) {
+    return document.querySelector(selector);
 }
-
-
-function cacheElements() {
-
-    elements.loader =
-        document.querySelector(
-            ".app-loader"
-        );
-
-    elements.musicScreen =
-        document.getElementById(
-            "music-screen"
-        );
-
-    elements.viewerScreen =
-        document.getElementById(
-            "viewer-screen"
-        );
-
-    elements.dashboardScreen =
-        document.getElementById(
-            "dashboard-screen"
-        );
-
-
-    elements.songContainer =
-        document.getElementById(
-            "song-container"
-        );
-
-    elements.viewToggle =
-        document.getElementById(
-            "view-toggle"
-        );
-
-    elements.viewMode =
-        document.getElementById(
-            "view-mode"
-        );
-
-    elements.skipButton =
-        document.getElementById(
-            "skip-button"
-        );
-
-
-    elements.backgroundAudio =
-        document.getElementById(
-            "background-audio"
-        );
-
-
-    elements.currentMediaName =
-        document.getElementById(
-            "current-media-name"
-        );
-
-    elements.mediaWrapper =
-        document.getElementById(
-            "media-wrapper"
-        );
-
-    elements.mediaWatchTime =
-        document.getElementById(
-            "media-watch-time"
-        );
-
-    elements.mediaPosition =
-        document.getElementById(
-            "media-position"
-        );
-
-
-    elements.previousMedia =
-        document.getElementById(
-            "previous-media"
-        );
-
-    elements.nextMedia =
-        document.getElementById(
-            "next-media"
-        );
-
-
-    elements.volumeButton =
-        document.getElementById(
-            "volume-button"
-        );
-
-    elements.volumePopup =
-        document.getElementById(
-            "volume-popup"
-        );
-
-    elements.muteButton =
-        document.getElementById(
-            "mute-button"
-        );
-
-    elements.volumeSlider =
-        document.getElementById(
-            "volume-slider"
-        );
-
-
-    elements.fullscreenButton =
-        document.getElementById(
-            "fullscreen-button"
-        );
-
-    elements.openDashboard =
-        document.getElementById(
-            "open-dashboard"
-        );
-
-
-    elements.zoomSlider =
-        document.getElementById(
-            "zoom-slider"
-        );
-
-    elements.zoomButton =
-        document.getElementById(
-            "zoom-button"
-        );
-
-
-    elements.dashboardBack =
-        document.getElementById(
-            "dashboard-back"
-        );
-
-    elements.monthSelector =
-        document.getElementById(
-            "month-selector"
-        );
-
-    elements.currentMonthLabel =
-        document.getElementById(
-            "month-label"
-        );
+function qsa(selector) {
+    return [...document.querySelectorAll(selector)];
 }
-
-
-/* ============================================================
-   INITIALIZATION
-   ============================================================ */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    initializeApp,
-    {
-        once: true
+function on(element, event, handler, options) {
+    if (element) {
+        element.addEventListener(
+            event,
+            handler,
+            options
+        );
     }
-);
-
-
-function initializeApp() {
-
-    cacheElements();
-
-    initializeAnalytics();
-
-    repairAnalytics();
-
-    initializeMusicScreen();
-
-    initializeViewer();
-
-    initializeDashboard();
-
-    initializeAudio();
-
-    initializeTransitions();
-
-    hideLoader();
-
-    updateViewMode();
 }
-
-
-/* ============================================================
-   LOADER
-   ============================================================ */
-
-function hideLoader() {
-
-    if (!elements.loader) {
-        return;
+function setText(id, value) {
+    const element = $(id);
+    if (element) {
+        element.textContent =
+            value == null
+                ? "—"
+                : String(value);
     }
-
-    window.setTimeout(
-        () => {
-
-            elements.loader.classList.add(
-                "hidden"
+}
+const loader =
+    $("app-loader");
+const musicScreen =
+    $("music-screen");
+const viewerScreen =
+    $("viewer-screen");
+const dashboardScreen =
+    $("dashboard-screen");
+const songContainer =
+    $("song-container");
+const viewToggle =
+    $("view-toggle");
+const viewModeText =
+    $("view-mode");
+const skipButton =
+    $("skip-button");
+const backgroundAudio =
+    $("background-audio");
+const mediaWrapper =
+    $("media-wrapper");
+const currentMediaName =
+    $("current-media-name");
+const previousMediaButton =
+    $("previous-media");
+const nextMediaButton =
+    $("next-media");
+const mediaWatchTime =
+    $("media-watch-time");
+const mediaPosition =
+    $("media-position");
+const zoomSlider =
+    $("zoom-slider");
+const zoomInButton =
+    $("zoom-in");
+const zoomOutButton =
+    $("zoom-out");
+const volumeControl =
+    $("volume-control");
+const volumeButton =
+    $("volume-button");
+const volumeSlider =
+    $("volume-slider");
+const muteButton =
+    $("mute-button");
+const fullscreenButton =
+    $("fullscreen-button");
+const openDashboardButton =
+    $("open-dashboard");
+const backToViewerButton =
+    $("back-to-viewer");
+const monthSelector =
+    $("month-selector");
+const currentMonthLabel =
+    $("current-month-label");
+const transitionOverlay =
+    $("transition-overlay");
+function createDefaultPreferences() {
+    return {
+        volume: CONFIG.defaultVolume,
+        muted: false,
+        viewMode: "grid"
+    };
+}
+function loadPreferences() {
+    try {
+        const raw =
+            localStorage.getItem(
+                CONFIG.storage.preferences
             );
-
-        },
-        700
-    );
-}
-
-
-/* ============================================================
-   SCREEN MANAGEMENT
-   ============================================================ */
-
-function showScreen(
-    screenName
-) {
-
-    const screens =
-        document.querySelectorAll(
-            ".screen"
-        );
-
-
-    screens.forEach(
-        screen => {
-
-            screen.classList.remove(
-                "active"
-            );
+        if (!raw) {
+            return createDefaultPreferences();
         }
-    );
-
-
-    let target = null;
-
-
-    if (screenName === "music") {
-        target =
-            elements.musicScreen;
-    }
-
-    if (screenName === "viewer") {
-        target =
-            elements.viewerScreen;
-    }
-
-    if (screenName === "dashboard") {
-        target =
-            elements.dashboardScreen;
-    }
-
-
-    if (!target) {
-        return;
-    }
-
-
-    target.classList.add(
-        "active"
-    );
-
-
-    state.currentScreen =
-        screenName;
-
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-}
-
-
-/* ============================================================
-   TRANSITIONS
-   ============================================================ */
-
-function initializeTransitions() {
-    // Transition system uses transitionTo().
-}
-
-
-function transitionTo(
-    screenName
-) {
-
-    const overlay =
-        document.querySelector(
-            ".transition-overlay"
+        const parsed =
+            JSON.parse(raw);
+        return {
+            ...createDefaultPreferences(),
+            ...parsed
+        };
+    } catch (error) {
+        console.warn(
+            "Preferences could not be loaded.",
+            error
         );
-
-
-    if (!overlay) {
-
-        showScreen(
-            screenName
+        return createDefaultPreferences();
+    }
+}
+function savePreferences() {
+    try {
+        localStorage.setItem(
+            CONFIG.storage.preferences,
+            JSON.stringify({
+                volume: state.volume,
+                muted: state.muted,
+                viewMode: state.viewMode
+            })
         );
-
-        return;
+    } catch (error) {
+        console.warn(
+            "Preferences could not be saved.",
+            error
+        );
     }
-
-
-    overlay.classList.add(
-        "active"
-    );
-
-    overlay.classList.add(
-        "show"
-    );
-
-
-    window.setTimeout(
-        () => {
-
-            showScreen(
-                screenName
-            );
-
-        },
-        CONFIG.transitionDuration / 2
-    );
-
-
-    window.setTimeout(
-        () => {
-
-            overlay.classList.remove(
-                "active"
-            );
-
-            overlay.classList.remove(
-                "show"
-            );
-
-        },
-        CONFIG.transitionDuration
-    );
 }
-
-
-/* ============================================================
-   MUSIC SCREEN
-   ============================================================ */
-
-function initializeMusicScreen() {
-
-    renderSongs();
-
-    setupViewToggle();
-
-    setupSkipButton();
+function createDefaultAnalytics() {
+    const now =
+        new Date().toISOString();
+    return {
+        version: 3,
+        createdAt: now,
+        updatedAt: now,
+        sessions: [],
+        media: {}
+    };
 }
-
-
-function renderSongs() {
-
-    if (!elements.songContainer) {
-        return;
+function normalizeAnalytics(data) {
+    const base =
+        createDefaultAnalytics();
+    if (
+        !data ||
+        typeof data !== "object"
+    ) {
+        return base;
     }
-
-
-    elements.songContainer.innerHTML =
-        "";
-
-
-    songs.forEach(
-        (song, index) => {
-
-            const card =
-                document.createElement(
-                    "article"
-                );
-
-
-            card.className =
-                "song-card";
-
-
-            card.dataset.songIndex =
-                index;
-
-
-            card.innerHTML = `
-                <div class="song-thumbnail">
-
-                    <img
-                        src="${CONFIG.thumbnailPath}${song.thumbnail}"
-                        alt="${escapeHtml(song.name)}"
-                        loading="lazy"
-                    >
-
-                    <div class="thumbnail-overlay"></div>
-
-                    <div class="thumbnail-shine"></div>
-
-                    <div class="corner-accent"></div>
-
-                    <div class="track-number">
-                        ${String(song.id).padStart(2, "0")}
-                    </div>
-
-                    <button
-                        class="song-preview-button"
-                        type="button"
-                        aria-label="Preview ${escapeHtml(song.name)}"
-                    >
-                        <span class="song-play-indicator">
-                            ▶
-                        </span>
-                    </button>
-
-                </div>
-
-                <div class="song-info">
-
-                    <div class="song-subtitle">
-                        TRACK ${String(song.id).padStart(2, "0")}
-                    </div>
-
-                    <div class="song-title">
-                        ${escapeHtml(song.name)}
-                    </div>
-
-                    <div class="song-file">
-                        ${escapeHtml(song.file)}
-                    </div>
-
-                </div>
-            `;
-
-
-            const previewButton =
-                card.querySelector(
-                    ".song-preview-button"
-                );
-
-
-            on(
-                previewButton,
-                "click",
-                event => {
-
-                    event.stopPropagation();
-
-                    previewSong(index);
-                }
+    if (!Array.isArray(data.sessions)) {
+        data.sessions = [];
+    }
+    if (
+        !data.media ||
+        typeof data.media !== "object"
+    ) {
+        data.media = {};
+    }
+    data.version = 3;
+    if (!data.createdAt) {
+        data.createdAt =
+            base.createdAt;
+    }
+    data.updatedAt =
+        new Date().toISOString();
+    return data;
+}
+function loadAnalytics() {
+    try {
+        const raw =
+            localStorage.getItem(
+                CONFIG.storage.analytics
             );
-
-
-            on(
-                card,
-                "click",
-                () => {
-
-                    selectSong(index);
-                }
-            );
-
-
-            elements.songContainer.appendChild(
-                card
-            );
+        if (!raw) {
+            return createDefaultAnalytics();
         }
-    );
-}
-
-
-/* ============================================================
-   SONG SELECTION
-   ============================================================ */
-
-function selectSong(
-    index
-) {
-
-    if (
-        index < 0 ||
-        index >= songs.length
-    ) {
-        return;
+        return normalizeAnalytics(
+            JSON.parse(raw)
+        );
+    } catch (error) {
+        console.error(
+            "Analytics could not be loaded.",
+            error
+        );
+        return createDefaultAnalytics();
     }
-
-
-    state.selectedSong =
-        songs[index];
-
-    state.currentSongIndex =
-        index;
-
-
-    document
-        .querySelectorAll(
-            ".song-card"
-        )
-        .forEach(
-            card => {
-
-                card.classList.remove(
-                    "selected"
-                );
-
-
-                if (
-                    Number(
-                        card.dataset.songIndex
-                    ) === index
-                ) {
-
-                    card.classList.add(
-                        "selected"
-                    );
-                }
-            }
-        );
-
-
-    playBackgroundSong(
-        state.selectedSong
-    );
-
-
-    startViewer();
-
-
-    transitionTo(
-        "viewer"
-    );
 }
-
-
-/* ============================================================
-   SONG PREVIEW
-   ============================================================ */
-
-function previewSong(
-    index
-) {
-
-    if (
-        index < 0 ||
-        index >= songs.length
-    ) {
-        return;
-    }
-
-
-    const song =
-        songs[index];
-
-
-    playBackgroundSong(
-        song
-    );
-
-
-    document
-        .querySelectorAll(
-            ".song-card"
-        )
-        .forEach(
-            card => {
-
-                card.classList.remove(
-                    "active-song"
-                );
-            }
+let analytics =
+    loadAnalytics();
+function saveAnalytics() {
+    try {
+        analytics.updatedAt =
+            new Date().toISOString();
+        localStorage.setItem(
+            CONFIG.storage.analytics,
+            JSON.stringify(analytics)
         );
-
-
-    const activeCard =
-        document.querySelector(
-            `.song-card[data-song-index="${index}"]`
-        );
-
-
-    if (activeCard) {
-
-        activeCard.classList.add(
-            "active-song"
+    } catch (error) {
+        console.error(
+            "Analytics could not be saved.",
+            error
         );
     }
 }
-
-
-/* ============================================================
-   AUDIO
-   ============================================================ */
-
-function initializeAudio() {
-
-    if (!elements.backgroundAudio) {
-        return;
-    }
-
-
-    elements.backgroundAudio.volume =
-        state.volume;
-
-
-    elements.backgroundAudio.loop =
-        true;
-}
-
-
-function playBackgroundSong(
-    song
-) {
-
-    if (!elements.backgroundAudio) {
-        return;
-    }
-
-
-    const audio =
-        elements.backgroundAudio;
-
-
-    const source =
-        `${CONFIG.musicPath}${song.file}`;
-
-
-    if (
-        audio.src &&
-        audio.src.includes(
-            song.file
-        )
-    ) {
-
-        audio.play().catch(
-            () => {}
-        );
-
-        return;
-    }
-
-
-    audio.src =
-        source;
-
-
-    audio.volume =
-        state.muted
-            ? 0
-            : state.volume;
-
-
-    audio.loop =
-        true;
-
-
-    audio.load();
-
-
-    audio.play().catch(
-        () => {}
-    );
-}
-
-
-/* ============================================================
-   VIEW MODE
-   ============================================================ */
-
-function setupViewToggle() {
-
-    if (!elements.viewToggle) {
-        return;
-    }
-
-
-    on(
-        elements.viewToggle,
-        "click",
-        () => {
-
-            state.viewMode =
-                state.viewMode === "grid"
-                    ? "list"
-                    : "grid";
-
-
-            updateViewMode();
-        }
-    );
-}
-
-
-function updateViewMode() {
-
-    if (!elements.songContainer) {
-        return;
-    }
-
-
-    elements.songContainer.classList.toggle(
-        "grid-view",
-        state.viewMode === "grid"
-    );
-
-
-    elements.songContainer.classList.toggle(
-        "list-view",
-        state.viewMode === "list"
-    );
-
-
-    if (elements.viewMode) {
-
-        elements.viewMode.textContent =
-            state.viewMode === "grid"
-                ? "GRID"
-                : "LIST";
-    }
-}
-
-
-/* ============================================================
-   SKIP
-   ============================================================ */
-
-function setupSkipButton() {
-
-    if (!elements.skipButton) {
-        return;
-    }
-
-
-    on(
-        elements.skipButton,
-        "click",
-        () => {
-
-            startViewer();
-
-            transitionTo(
-                "viewer"
-            );
-        }
-    );
-}
-
-
-/* ============================================================
-   VIEWER START
-   ============================================================ */
-
-function startViewer() {
-
-    state.currentMediaIndex =
-        0;
-
-    state.zoom =
-        1;
-
-
-    startSession();
-
-
-    loadMedia(
-        0,
-        true
-    );
-}
-
-
-/* ============================================================
-   VIEWER INITIALIZATION
-   ============================================================ */
-
-function initializeViewer() {
-
-    setupNavigation();
-
-    setupVolumeControls();
-
-    setupZoomControls();
-
-    setupFullscreen();
-
-    setupDashboardButton();
-}
-
-
-/* ============================================================
-   MEDIA HELPERS
-   ============================================================ */
-
-function getMedia(
-    index
-) {
-
-    if (
-        index < 0 ||
-        index >= mediaLibrary.length
-    ) {
-        return null;
-    }
-
-
-    return mediaLibrary[index];
-}
-
-
-/* ============================================================
-   MEDIA LOADING
-   ============================================================ */
-
-function loadMedia(
-    index,
-    isInitialLoad = false
-) {
-
-    if (
-        index < 0 ||
-        index >= mediaLibrary.length
-    ) {
-        return;
-    }
-
-
-    if (
-        !isInitialLoad
-    ) {
-
-        commitCurrentMediaTime();
-    }
-
-
-    state.currentMediaIndex =
-        index;
-
-
-    state.mediaStartTime =
-        Date.now();
-
-
-    state.mediaElapsedSeconds =
-        0;
-
-
-    state.currentMediaWatchTime =
-        0;
-
-
-    state.zoom =
-        1;
-
-
-    const media =
-        getMedia(
-            index
-        );
-
-
-    if (!media) {
-        return;
-    }
-
-
-    ensureMediaStats(
-        media
-    );
-
-
-    incrementMediaOpen(
-        media
-    );
-
-
-    renderMedia(
-        media
-    );
-
-
-    updateMediaName(
-        media
-    );
-
-
-    updateMediaPosition();
-
-    updateZoomUI();
-
-    applyVolume();
-
-    startMediaTimer();
-}
-
-
-/* ============================================================
-   MEDIA RENDERING
-   ============================================================ */
-
-function renderMedia(
-    media
-) {
-
-    if (!elements.mediaWrapper) {
-        return;
-    }
-
-
-    elements.mediaWrapper.innerHTML =
-        "";
-
-
-    if (
-        media.type === "photo"
-    ) {
-
-        const image =
-            document.createElement(
-                "img"
-            );
-
-
-        image.className =
-            "viewer-image viewer-photo";
-
-
-        image.src =
-            media.path;
-
-
-        image.alt =
-            media.name;
-
-
-        image.draggable =
-            false;
-
-
-        elements.mediaWrapper.appendChild(
-            image
-        );
-
-
-        return;
-    }
-
-
-    if (
-        media.type === "video"
-    ) {
-
-        const video =
-            document.createElement(
-                "video"
-            );
-
-
-        video.className =
-            "viewer-video";
-
-
-        video.src =
-            media.path;
-
-
-        video.autoplay =
-            true;
-
-
-        video.loop =
-            true;
-
-
-        video.playsInline =
-            true;
-
-
-        video.controls =
-            false;
-
-
-        video.muted =
-            state.muted;
-
-
-        video.volume =
-            state.muted
-                ? 0
-                : state.volume;
-
-
-        on(
-            video,
-            "loadedmetadata",
-            () => {
-
-                video.play().catch(
-                    () => {}
-                );
-            }
-        );
-
-
-        elements.mediaWrapper.appendChild(
-            video
-        );
-    }
-}
-
-
-/* ============================================================
-   MEDIA NAME / POSITION
-   ============================================================ */
-
-function updateMediaName(
-    media
-) {
-
-    if (
-        elements.currentMediaName
-    ) {
-
-        elements.currentMediaName.textContent =
-            media.name;
-    }
-}
-
-
-function updateMediaPosition() {
-
-    if (
-        !elements.mediaPosition
-    ) {
-        return;
-    }
-
-
-    elements.mediaPosition.textContent =
-        `${state.currentMediaIndex + 1} / ${mediaLibrary.length}`;
-}
-
-
-/* ============================================================
-   NAVIGATION
-   ============================================================ */
-
-function setupNavigation() {
-
-    on(
-        elements.previousMedia,
-        "click",
-        previousMedia
-    );
-
-
-    on(
-        elements.nextMedia,
-        "click",
-        nextMedia
-    );
-}
-
-
-function previousMedia() {
-
-    if (!mediaLibrary.length) {
-        return;
-    }
-
-
-    commitCurrentMediaTime();
-
-
-    let previousIndex =
-        state.currentMediaIndex - 1;
-
-
-    if (
-        previousIndex < 0
-    ) {
-
-        previousIndex =
-            mediaLibrary.length - 1;
-    }
-
-
-    loadMedia(
-        previousIndex
-    );
-}
-
-
-/* ============================================================
-   NEXT MEDIA
-   FINAL MEDIA → DASHBOARD
-   ============================================================ */
-
-function nextMedia() {
-
-    if (!mediaLibrary.length) {
-        return;
-    }
-
-
-    commitCurrentMediaTime();
-
-
-    const nextIndex =
-        state.currentMediaIndex + 1;
-
-
-    if (
-        nextIndex >=
-        mediaLibrary.length
-    ) {
-
-        endSession();
-
-
-        state.dashboardReturnScreen =
-            "viewer";
-
-
-        renderDashboard();
-
-
-        showScreen(
-            "dashboard"
-        );
-
-
-        return;
-    }
-
-
-    loadMedia(
-        nextIndex
-    );
-}
-
-
-/* ============================================================
-   MEDIA TIMER
-   ============================================================ */
-
-let mediaTimerInterval =
-    null;
-
-
-function startMediaTimer() {
-
-    stopMediaTimer();
-
-
-    state.mediaStartTime =
-        Date.now();
-
-
-    mediaTimerInterval =
-        window.setInterval(
-            updateMediaTimer,
-            1000
-        );
-}
-
-
-function stopMediaTimer() {
-
-    if (
-        mediaTimerInterval !== null
-    ) {
-
-        window.clearInterval(
-            mediaTimerInterval
-        );
-
-
-        mediaTimerInterval =
-            null;
-    }
-}
-
-
-function updateMediaTimer() {
-
-    if (
-        !state.mediaStartTime
-    ) {
-        return;
-    }
-
-
-    const elapsed =
-        Math.max(
+const preferences =
+    loadPreferences();
+const state = {
+    currentScreen: "music",
+    currentMediaIndex: 0,
+    selectedSong: null,
+    viewMode:
+        preferences.viewMode === "list"
+            ? "list"
+            : "grid",
+    zoom: 1,
+    volume:
+        clamp(
+            Number(preferences.volume),
             0,
-            Math.floor(
-                (
-                    Date.now() -
-                    state.mediaStartTime
-                ) / 1000
-            )
-        );
-
-
-    state.mediaElapsedSeconds =
-        elapsed;
-
-
-    state.currentMediaWatchTime =
-        elapsed;
-
-
-    updateWatchTimerDisplay(
-        elapsed
+            1
+        ),
+    muted:
+        Boolean(preferences.muted),
+    currentMediaElement: null,
+    currentSession: null,
+    sessionStarted: false,
+    mediaStartTimestamp: null,
+    mediaElapsedSeconds: 0,
+    timerInterval: null,
+    analyticsSaveTimer: null,
+    previewAudio: null,
+    previewSongId: null,
+    transitionLocked: false,
+    pageVisible:
+        !document.hidden,
+    dashboardReturnScreen:
+        "viewer",
+    selectedDashboardMonth:
+        getMonthKey()
+};
+function clamp(value, min, max) {
+    return Math.min(
+        max,
+        Math.max(min, value)
     );
 }
-
-
-function updateWatchTimerDisplay(
-    seconds
-) {
-
-    if (
-        elements.mediaWatchTime
-    ) {
-
-        elements.mediaWatchTime.textContent =
-            formatTime(
-                seconds
-            );
-    }
+function isFiniteNumber(value) {
+    return (
+        typeof value === "number" &&
+        Number.isFinite(value)
+    );
 }
-
-
-/* ============================================================
-   TIME FORMATTING
-   ============================================================ */
-
-function normalizeSeconds(
-    value
-) {
-
+function getDateObject() {
+    return new Date();
+}
+function getTodayKey(date = getDateObject()) {
+    const year =
+        date.getFullYear();
+    const month =
+        String(
+            date.getMonth() + 1
+        ).padStart(2, "0");
+    const day =
+        String(
+            date.getDate()
+        ).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+function getMonthKey(date = getDateObject()) {
+    const year =
+        date.getFullYear();
+    const month =
+        String(
+            date.getMonth() + 1
+        ).padStart(2, "0");
+    return `${year}-${month}`;
+}
+function formatDate(dateKey) {
+    if (!dateKey) {
+        return "—";
+    }
+    const date =
+        new Date(
+            `${dateKey}T00:00:00`
+        );
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return dateKey;
+    }
+    return new Intl.DateTimeFormat(
+        "en-US",
+        {
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        }
+    ).format(date);
+}
+function formatMonth(monthKey) {
+    if (!monthKey) {
+        return "—";
+    }
+    const [year, month] =
+        monthKey.split("-");
+    const date =
+        new Date(
+            Number(year),
+            Number(month) - 1,
+            1
+        );
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return monthKey;
+    }
+    return new Intl.DateTimeFormat(
+        "en-US",
+        {
+            month: "long",
+            year: "numeric"
+        }
+    ).format(date);
+}
+function normalizeSeconds(value) {
     return Math.max(
         0,
         Math.floor(
@@ -1574,2382 +436,900 @@ function normalizeSeconds(
         )
     );
 }
-
-
-function formatTime(
-    seconds
-) {
-
+function formatTime(seconds) {
     seconds =
-        normalizeSeconds(
-            seconds
-        );
-
-
+        normalizeSeconds(seconds);
     const hours =
         Math.floor(
             seconds / 3600
         );
-
-
     const minutes =
         Math.floor(
-            (
-                seconds % 3600
-            ) / 60
+            (seconds % 3600) / 60
         );
-
-
     const remaining =
         seconds % 60;
-
-
     if (hours > 0) {
-
-        return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
+        return `${hours}h ${minutes}m ${remaining}s`;
     }
-
-
-    return `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
+    if (minutes > 0) {
+        return `${minutes}m ${remaining}s`;
+    }
+    return `${remaining}s`;
 }
-
-
-function formatDuration(
-    seconds
-) {
-
-    return formatTime(
-        seconds
+function formatCompactTime(seconds) {
+    seconds =
+        normalizeSeconds(seconds);
+    const hours =
+        Math.floor(
+            seconds / 3600
+        );
+    const minutes =
+        Math.floor(
+            (seconds % 3600) / 60
+        );
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+    if (minutes > 0) {
+        return `${minutes}m`;
+    }
+    return `${seconds}s`;
+}
+function formatClock(seconds) {
+    seconds =
+        normalizeSeconds(seconds);
+    const hours =
+        Math.floor(
+            seconds / 3600
+        );
+    const minutes =
+        Math.floor(
+            (seconds % 3600) / 60
+        );
+    const remaining =
+        seconds % 60;
+    return [
+        String(hours).padStart(2, "0"),
+        String(minutes).padStart(2, "0"),
+        String(remaining).padStart(2, "0")
+    ].join(":");
+}
+function getMedia(index) {
+    return mediaLibrary[index] || null;
+}
+function getMediaById(id) {
+    return (
+        mediaLibrary.find(
+            media => media.id === id
+        ) || null
     );
 }
-
-
-/* ============================================================
-   ANALYTICS INITIALIZATION
-   ============================================================ */
-
-function initializeAnalytics() {
-
-    const stored =
-        localStorage.getItem(
-            CONFIG.storageKey
-        );
-
-
-    if (!stored) {
-
-        analytics = {
-            sessions: [],
-            media: {},
-            daily: {}
-        };
-
-
-        saveAnalytics();
-
+function initializeApp() {
+    applyPreferences();
+    renderSongs();
+    initializeViewMode();
+    initializeMonthSelector();
+    bindEvents();
+    updateViewerUI();
+    hideLoader();
+    console.log(
+        `Archive initialized: ${photos.length} photos, ${videos.length} videos, ${songs.length} songs.`
+    );
+}
+function applyPreferences() {
+    if (volumeSlider) {
+        volumeSlider.value =
+            String(state.volume);
+    }
+    applyAudioSettings();
+    updateVolumeUI();
+}
+function applyAudioSettings() {
+    if (!backgroundAudio) {
         return;
     }
-
-
-    try {
-
-        analytics =
-            JSON.parse(
-                stored
+    backgroundAudio.volume =
+        state.volume;
+    backgroundAudio.muted =
+        state.muted;
+}
+function hideLoader() {
+    if (!loader) {
+        return;
+    }
+    window.setTimeout(() => {
+        loader.classList.add(
+            "hidden"
+        );
+    }, 450);
+}
+function bindEvents() {
+    on(
+        viewToggle,
+        "click",
+        toggleViewMode
+    );
+    on(
+        skipButton,
+        "click",
+        skipMusic
+    );
+    on(
+        previousMediaButton,
+        "click",
+        previousMedia
+    );
+    on(
+        nextMediaButton,
+        "click",
+        nextMedia
+    );
+    on(
+        zoomSlider,
+        "input",
+        event => {
+            setZoom(
+                Number(
+                    event.target.value
+                )
             );
-
-    } catch (error) {
-
-        analytics = {
-            sessions: [],
-            media: {},
-            daily: {}
-        };
-
-
-        saveAnalytics();
+        }
+    );
+    on(
+        zoomInButton,
+        "click",
+        () => {
+            setZoom(
+                state.zoom +
+                CONFIG.zoomStep
+            );
+        }
+    );
+    on(
+        zoomOutButton,
+        "click",
+        () => {
+            setZoom(
+                state.zoom -
+                CONFIG.zoomStep
+            );
+        }
+    );
+    on(
+        volumeSlider,
+        "input",
+        event => {
+            setVolume(
+                Number(
+                    event.target.value
+                )
+            );
+        }
+    );
+    on(
+        muteButton,
+        "click",
+        toggleMute
+    );
+    on(
+        volumeButton,
+        "click",
+        toggleMute
+    );
+    on(
+        fullscreenButton,
+        "click",
+        toggleFullscreen
+    );
+    on(
+        openDashboardButton,
+        "click",
+        openDashboard
+    );
+    on(
+        backToViewerButton,
+        "click",
+        backToViewer
+    );
+    on(
+        monthSelector,
+        "change",
+        () => {
+            state.selectedDashboardMonth =
+                monthSelector.value;
+            renderDashboard();
+        }
+    );
+    on(
+        document,
+        "keydown",
+        handleKeyboard
+    );
+    on(
+        document,
+        "visibilitychange",
+        handleVisibilityChange
+    );
+    on(
+        window,
+        "pagehide",
+        handlePageExit
+    );
+    on(
+        window,
+        "beforeunload",
+        handlePageExit
+    );
+}
+function showScreen(screenName) {
+    const screens = {
+        music: musicScreen,
+        viewer: viewerScreen,
+        dashboard: dashboardScreen
+    };
+    const target =
+        screens[screenName];
+    if (!target) {
+        return;
+    }
+    if (
+        state.currentScreen ===
+        screenName
+    ) {
+        return;
+    }
+    if (state.transitionLocked) {
+        return;
+    }
+    state.transitionLocked =
+        true;
+    if (transitionOverlay) {
+        transitionOverlay.classList.add(
+            "show"
+        );
+    }
+    window.setTimeout(() => {
+        Object.values(screens)
+            .filter(Boolean)
+            .forEach(screen => {
+                screen.classList.remove(
+                    "active"
+                );
+            });
+        target.classList.add(
+            "active"
+        );
+        state.currentScreen =
+            screenName;
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }, CONFIG.transitionDuration);
+    window.setTimeout(() => {
+        if (transitionOverlay) {
+            transitionOverlay.classList.remove(
+                "show"
+            );
+        }
+        state.transitionLocked =
+            false;
+    }, CONFIG.transitionDuration + 350);
+}
+function initializeViewMode() {
+    if (!songContainer) {
+        return;
+    }
+    updateViewModeClasses();
+}
+function updateViewModeClasses() {
+    if (!songContainer) {
+        return;
+    }
+    const grid =
+        state.viewMode === "grid";
+    songContainer.classList.toggle(
+        "grid-view",
+        grid
+    );
+    songContainer.classList.toggle(
+        "list-view",
+        !grid
+    );
+    if (viewModeText) {
+        viewModeText.textContent =
+            grid
+                ? "Grid"
+                : "List";
     }
 }
-
-
-/* ============================================================
-   ANALYTICS SAVE
-   ============================================================ */
-
-function saveAnalytics() {
-
-    try {
-
-        localStorage.setItem(
-            CONFIG.storageKey,
-            JSON.stringify(
-                analytics
-            )
+function toggleViewMode() {
+    state.viewMode =
+        state.viewMode === "grid"
+            ? "list"
+            : "grid";
+    updateViewModeClasses();
+    savePreferences();
+}
+function renderSongs() {
+    if (!songContainer) {
+        return;
+    }
+    songContainer.innerHTML = "";
+    const fragment =
+        document.createDocumentFragment();
+    songs.forEach(
+        (song, index) => {
+            fragment.appendChild(
+                createSongCard(
+                    song,
+                    index
+                )
+            );
+        }
+    );
+    songContainer.appendChild(
+        fragment
+    );
+}
+function createSongCard(song, index) {
+    const card =
+        document.createElement(
+            "article"
         );
-
+    card.className =
+        "song-card";
+    card.dataset.songId =
+        song.id;
+    card.tabIndex = 0;
+    card.setAttribute(
+        "role",
+        "button"
+    );
+    card.setAttribute(
+        "aria-label",
+        `Open ${song.name}`
+    );
+    const thumbnail =
+        document.createElement(
+            "div"
+        );
+    thumbnail.className =
+        "song-thumbnail";
+    const image =
+        document.createElement(
+            "img"
+        );
+    image.className =
+        "song-thumbnail-image";
+    image.src =
+        song.thumbnail;
+    image.alt =
+        song.name;
+    image.loading =
+        "lazy";
+    image.decoding =
+        "async";
+    image.draggable =
+        false;
+    const fallback =
+        document.createElement(
+            "div"
+        );
+    fallback.className =
+        "song-thumbnail-fallback";
+    fallback.textContent =
+        String(
+            song.trackNumber
+        ).padStart(2, "0");
+    on(
+        image,
+        "error",
+        () => {
+            image.style.display =
+                "none";
+            fallback.classList.add(
+                "show"
+            );
+        }
+    );
+    const previewButton =
+        document.createElement(
+            "button"
+        );
+    previewButton.type =
+        "button";
+    previewButton.className =
+        "song-preview-button";
+    previewButton.setAttribute(
+        "aria-label",
+        `Preview ${song.name}`
+    );
+    previewButton.innerHTML =
+        "<span>▶</span>";
+    const details =
+        document.createElement(
+            "div"
+        );
+    details.className =
+        "song-details";
+    const subtitle =
+        document.createElement(
+            "div"
+        );
+    subtitle.className =
+        "song-subtitle";
+    subtitle.textContent =
+        `TRACK ${String(song.trackNumber).padStart(2, "0")}`;
+    const title =
+        document.createElement(
+            "div"
+        );
+    title.className =
+        "song-name";
+    title.textContent =
+        song.name;
+    const file =
+        document.createElement(
+            "div"
+        );
+    file.className =
+        "song-file";
+    file.textContent =
+        song.file;
+    details.appendChild(
+        subtitle
+    );
+    details.appendChild(
+        title
+    );
+    details.appendChild(
+        file
+    );
+    thumbnail.appendChild(
+        image
+    );
+    thumbnail.appendChild(
+        fallback
+    );
+    thumbnail.appendChild(
+        previewButton
+    );
+    card.appendChild(
+        thumbnail
+    );
+    card.appendChild(
+        details
+    );
+    initializeSongInteractions(
+        card,
+        song,
+        previewButton
+    );
+    return card;
+}
+function initializeSongInteractions(
+    card,
+    song,
+    previewButton
+) {
+    let hoverTimer = null;
+    let inside = false;
+    on(
+        card,
+        "mouseenter",
+        () => {
+            inside = true;
+            clearTimeout(
+                hoverTimer
+            );
+            hoverTimer =
+                window.setTimeout(() => {
+                    if (inside) {
+                        card.classList.add(
+                            "hover-ready"
+                        );
+                    }
+                }, CONFIG.hoverDelay);
+        }
+    );
+    on(
+        card,
+        "mouseleave",
+        () => {
+            inside = false;
+            clearTimeout(
+                hoverTimer
+            );
+            card.classList.remove(
+                "hover-ready"
+            );
+        }
+    );
+    on(
+        card,
+        "click",
+        event => {
+            if (
+                event.target.closest(
+                    ".song-preview-button"
+                )
+            ) {
+                return;
+            }
+            selectSong(song);
+        }
+    );
+    on(
+        card,
+        "keydown",
+        event => {
+            if (
+                event.key === "Enter" ||
+                event.key === " "
+            ) {
+                event.preventDefault();
+                selectSong(song);
+            }
+        }
+    );
+    on(
+        previewButton,
+        "click",
+        event => {
+            event.preventDefault();
+            event.stopPropagation();
+            previewSong(song);
+        }
+    );
+}
+function previewSong(song) {
+    if (
+        state.previewSongId === song.id &&
+        state.previewAudio &&
+        !state.previewAudio.paused
+    ) {
+        stopSongPreview();
+        return;
+    }
+    stopSongPreview();
+    const preview =
+        document.createElement(
+            "video"
+        );
+    preview.src =
+        song.path;
+    preview.preload =
+        "auto";
+    preview.playsInline =
+        true;
+    preview.controls =
+        false;
+    preview.muted =
+        state.muted;
+    preview.volume =
+        state.volume;
+    preview.style.display =
+        "none";
+    document.body.appendChild(
+        preview
+    );
+    state.previewAudio =
+        preview;
+    state.previewSongId =
+        song.id;
+    markPreviewingSong(
+        song.id
+    );
+    const playPromise =
+        preview.play();
+    if (
+        playPromise &&
+        typeof playPromise.then ===
+        "function"
+    ) {
+        playPromise.catch(error => {
+            console.warn(
+                "Preview could not start:",
+                error
+            );
+            stopSongPreview();
+        });
+    }
+    on(
+        preview,
+        "ended",
+        stopSongPreview
+    );
+    on(
+        preview,
+        "error",
+        () => {
+            console.warn(
+                `Could not load ${song.file}`
+            );
+            stopSongPreview();
+        }
+    );
+}
+function markPreviewingSong(songId) {
+    qsa(
+        ".song-card"
+    ).forEach(card => {
+        card.classList.toggle(
+            "previewing",
+            card.dataset.songId ===
+            songId
+        );
+    });
+}
+function stopSongPreview() {
+    if (state.previewAudio) {
+        try {
+            state.previewAudio.pause();
+            state.previewAudio.removeAttribute(
+                "src"
+            );
+            state.previewAudio.load();
+            state.previewAudio.remove();
+        } catch (error) {
+            console.warn(
+                "Preview cleanup failed.",
+                error
+            );
+        }
+    }
+    state.previewAudio =
+        null;
+    state.previewSongId =
+        null;
+    qsa(
+        ".song-card.previewing"
+    ).forEach(card => {
+        card.classList.remove(
+            "previewing"
+        );
+    });
+}
+function selectSong(song) {
+    stopSongPreview();
+    state.selectedSong =
+        song;
+    startBackgroundMusic(
+        song
+    );
+    enterViewer();
+}
+function startBackgroundMusic(song) {
+    if (!backgroundAudio || !song) {
+        return;
+    }
+    try {
+        backgroundAudio.pause();
+        backgroundAudio.currentTime =
+            0;
+        backgroundAudio.src =
+            song.path;
+        backgroundAudio.loop =
+            true;
+        backgroundAudio.preload =
+            "auto";
+        backgroundAudio.volume =
+            state.volume;
+        backgroundAudio.muted =
+            state.muted;
+        const promise =
+            backgroundAudio.play();
+        if (
+            promise &&
+            typeof promise.catch ===
+            "function"
+        ) {
+            promise.catch(error => {
+                console.warn(
+                    "Background music could not start:",
+                    error
+                );
+            });
+        }
     } catch (error) {
-
         console.error(
-            "Archive analytics save failed:",
+            "Background music error:",
             error
         );
     }
 }
-
-
-/* ============================================================
-   MEDIA STATS
-   ============================================================ */
-
-function ensureMediaStats(
-    media
-) {
-
-    if (!analytics.media) {
-        analytics.media = {};
+function stopBackgroundMusic() {
+    if (!backgroundAudio) {
+        return;
     }
-
-
-    if (
-        !analytics.media[
-            media.id
-        ]
-    ) {
-
-        analytics.media[
-            media.id
-        ] = {
-
-            id:
-                media.id,
-
-            type:
-                media.type,
-
-            name:
-                media.name,
-
-            file:
-                media.file,
-
-            totalWatchTime:
-                0,
-
-            totalViews:
-                0,
-
-            monthly:
-                {},
-
-            monthlyViews:
-                {}
-        };
-    }
-
-
-    const stats =
-        analytics.media[
-            media.id
-        ];
-
-
-    if (
-        typeof stats.totalWatchTime !==
-        "number"
-    ) {
-
-        stats.totalWatchTime =
+    try {
+        backgroundAudio.pause();
+        backgroundAudio.currentTime =
             0;
-    }
-
-
-    if (
-        typeof stats.totalViews !==
-        "number"
-    ) {
-
-        stats.totalViews =
-            0;
-    }
-
-
-    if (
-        !stats.monthly ||
-        typeof stats.monthly !==
-        "object"
-    ) {
-
-        stats.monthly =
-            {};
-    }
-
-
-    if (
-        !stats.monthlyViews ||
-        typeof stats.monthlyViews !==
-        "object"
-    ) {
-
-        stats.monthlyViews =
-            {};
-    }
-
-
-    return stats;
-}
-
-
-function incrementMediaOpen(
-    media
-) {
-
-    const stats =
-        ensureMediaStats(
-            media
+        backgroundAudio.removeAttribute(
+            "src"
         );
-
-
-    const month =
-        getMonthKey();
-
-
-    stats.totalViews +=
-        1;
-
-
-    stats.monthlyViews[month] =
-        normalizeSeconds(
-            stats.monthlyViews[month]
-        ) + 1;
-
-
-    saveAnalytics();
+        backgroundAudio.load();
+    } catch (error) {
+        console.warn(
+            "Background audio cleanup failed.",
+            error
+        );
+    }
 }
-
-
-/* ============================================================
-   SESSION START
-   ============================================================ */
-
+function skipMusic() {
+    stopSongPreview();
+    stopBackgroundMusic();
+    state.selectedSong =
+        null;
+    enterViewer();
+}
+function createSessionId() {
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+        "function"
+    ) {
+        return window.crypto.randomUUID();
+    }
+    return [
+        "session",
+        Date.now(),
+        Math.random()
+            .toString(16)
+            .slice(2)
+    ].join("-");
+}
 function startSession() {
-
-    stopMediaTimer();
-
-
+    if (state.sessionStarted) {
+        return;
+    }
+    const now =
+        new Date();
+    state.currentSession = {
+        id: createSessionId(),
+        startTime:
+            now.toISOString(),
+        endTime: null,
+        date:
+            getTodayKey(now),
+        mediaOpened: 0,
+        uniqueMedia: [],
+        watchTime: 0
+    };
     state.sessionStarted =
         true;
-
-
-    state.sessionStartTime =
-        Date.now();
-
-
-    state.mediaStartTime =
-        Date.now();
-
-
+    state.mediaStartTimestamp =
+        null;
     state.mediaElapsedSeconds =
         0;
-
-
-    state.currentMediaWatchTime =
-        0;
-
-
-    startMediaTimer();
-}
-
-
-/* ============================================================
-   CURRENT MEDIA TIME COMMIT
-   ============================================================ */
-
-function commitCurrentMediaTime() {
-
-    if (
-        !state.sessionStarted ||
-        !state.mediaStartTime
-    ) {
-        return;
-    }
-
-
-    const elapsed =
-        Math.max(
-            0,
-            Math.floor(
-                (
-                    Date.now() -
-                    state.mediaStartTime
-                ) / 1000
-            )
-        );
-
-
-    state.currentMediaWatchTime =
-        elapsed;
-
-
-    const media =
-        getMedia(
-            state.currentMediaIndex
-        );
-
-
-    if (!media) {
-        return;
-    }
-
-
-    const stats =
-        ensureMediaStats(
-            media
-        );
-
-
-    if (
-        elapsed > 0
-    ) {
-
-        const month =
-            getMonthKey();
-
-
-        stats.totalWatchTime +=
-            elapsed;
-
-
-        stats.monthly[month] =
-            normalizeSeconds(
-                stats.monthly[month]
-            ) + elapsed;
-    }
-
-
-    state.mediaElapsedSeconds =
-        0;
-
-
-    state.currentMediaWatchTime =
-        0;
-
-
-    state.mediaStartTime =
-        Date.now();
-
-
-    saveAnalytics();
-}
-
-
-/* ============================================================
-   SESSION END
-   ============================================================ */
-
-function endSession() {
-
-    if (
-        !state.sessionStarted
-    ) {
-        return;
-    }
-
-
-    commitCurrentMediaTime();
-
-
-    const sessionEnd =
-        Date.now();
-
-
-    const duration =
-        Math.max(
-            0,
-            Math.floor(
-                (
-                    sessionEnd -
-                    state.sessionStartTime
-                ) / 1000
-            )
-        );
-
-
-    const startedAt =
-        new Date(
-            state.sessionStartTime
-        );
-
-
-    const sessionDate =
-        startedAt
-            .toISOString()
-            .slice(
-                0,
-                10
-            );
-
-
-    const session = {
-
-        id:
-            createSessionId(),
-
-        startTime:
-            state.sessionStartTime,
-
-        endTime:
-            sessionEnd,
-
-        startedAt:
-            startedAt.toISOString(),
-
-        endedAt:
-            new Date(
-                sessionEnd
-            ).toISOString(),
-
-        date:
-            sessionDate,
-
-        mediaOpened:
-            state.currentMediaIndex + 1,
-
-        uniqueMedia:
-            getSessionUniqueMedia(),
-
-        watchTime:
-            duration,
-
-        duration:
-            duration
-    };
-
-
-    if (
-        !Array.isArray(
-            analytics.sessions
-        )
-    ) {
-
-        analytics.sessions =
-            [];
-    }
-
-
     analytics.sessions.push(
-        session
+        state.currentSession
     );
-
-
-    if (!analytics.daily) {
-        analytics.daily = {};
-    }
-
-
-    if (
-        !analytics.daily[
-            sessionDate
-        ]
-    ) {
-
-        analytics.daily[
-            sessionDate
-        ] = {
-
-            time:
-                0,
-
-            sessions:
-                0,
-
-            mediaOpened:
-                0
-        };
-    }
-
-
-    analytics.daily[
-        sessionDate
-    ].time +=
-        duration;
-
-
-    analytics.daily[
-        sessionDate
-    ].sessions +=
-        1;
-
-
-    analytics.daily[
-        sessionDate
-    ].mediaOpened +=
-        session.mediaOpened;
-
-
     saveAnalytics();
-
-
+}
+function endSession() {
+    if (
+        !state.currentSession
+    ) {
+        return;
+    }
+    commitCurrentMediaTime();
+    state.currentSession.endTime =
+        new Date().toISOString();
+    saveAnalytics();
+    state.currentSession =
+        null;
     state.sessionStarted =
         false;
-
-
-    state.sessionStartTime =
+    state.mediaStartTimestamp =
         null;
-
-
-    state.mediaStartTime =
-        null;
-
-
     state.mediaElapsedSeconds =
         0;
-
-
-    state.currentMediaWatchTime =
-        0;
-
-
     stopMediaTimer();
 }
-
-
-/* ============================================================
-   SESSION UNIQUE MEDIA
-   ============================================================ */
-
-function getSessionUniqueMedia() {
-
-    return mediaLibrary
-        .slice(
-            0,
-            state.currentMediaIndex + 1
-        )
-        .map(
-            media =>
-                media.id
-        );
-}
-
-
-/* ============================================================
-   SESSION ID
-   ============================================================ */
-
-function createSessionId() {
-
-    return `session-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 10)}`;
-}
-
-
-/* ============================================================
-   VOLUME CONTROLS
-   ============================================================ */
-
-function setupVolumeControls() {
-
-    if (
-        elements.volumeSlider
-    ) {
-
-        elements.volumeSlider.value =
-            String(
-                state.volume
-            );
-
-
-        on(
-            elements.volumeSlider,
-            "input",
-            event => {
-
-                const value =
-                    Number(
-                        event.target.value
-                    );
-
-
-                state.volume =
-                    Math.max(
-                        0,
-                        Math.min(
-                            1,
-                            value
-                        )
-                    );
-
-
-                if (
-                    state.volume > 0
-                ) {
-
-                    state.muted =
-                        false;
-                }
-
-
-                applyVolume();
-            }
-        );
+function enterViewer() {
+    if (!state.sessionStarted) {
+        startSession();
     }
-
-
-    on(
-        elements.muteButton,
-        "click",
-        toggleMute
-    );
-
-
-    on(
-        elements.volumeButton,
-        "click",
-        event => {
-
-            event.stopPropagation();
-
-
-            if (
-                elements.volumePopup
-            ) {
-
-                elements.volumePopup.classList.toggle(
-                    "active"
-                );
-            }
-        }
-    );
-}
-
-
-function toggleMute() {
-
-    state.muted =
-        !state.muted;
-
-
-    applyVolume();
-}
-
-
-function setVolume(
-    value
-) {
-
-    state.volume =
-        Math.max(
-            0,
-            Math.min(
-                1,
-                Number(value) || 0
-            )
-        );
-
-
-    if (
-        state.volume > 0
-    ) {
-
-        state.muted =
-            false;
-    }
-
-
-    applyVolume();
-}
-
-
-function applyVolume() {
-
-    if (
-        elements.backgroundAudio
-    ) {
-
-        elements.backgroundAudio.volume =
-            state.muted
-                ? 0
-                : state.volume;
-    }
-
-
-    const video =
-        elements.mediaWrapper
-            ?.querySelector(
-                "video"
-            );
-
-
-    if (video) {
-
-        video.volume =
-            state.muted
-                ? 0
-                : state.volume;
-
-
-        video.muted =
-            state.muted;
-    }
-
-
-    if (
-        elements.volumeSlider
-    ) {
-
-        elements.volumeSlider.value =
-            String(
-                state.muted
-                    ? 0
-                    : state.volume
-            );
-    }
-}
-
-
-/* ============================================================
-   ZOOM CONTROLS
-   ============================================================ */
-
-function setupZoomControls() {
-
-    if (
-        elements.zoomSlider
-    ) {
-
-        elements.zoomSlider.value =
-            String(
-                state.zoom
-            );
-
-
-        on(
-            elements.zoomSlider,
-            "input",
-            event => {
-
-                state.zoom =
-                    Number(
-                        event.target.value
-                    );
-
-
-                applyZoom();
-            }
-        );
-    }
-
-
-    on(
-        elements.zoomButton,
-        "click",
-        () => {
-
-            state.zoom =
-                state.zoom >= 2
-                    ? 1
-                    : Math.min(
-                        2,
-                        state.zoom + 0.25
-                    );
-
-
-            applyZoom();
-        }
-    );
-}
-
-
-function setZoom(
-    value
-) {
-
-    state.zoom =
-        Math.max(
-            1,
-            Math.min(
-                2,
-                Number(value) || 1
-            )
-        );
-
-
-    applyZoom();
-}
-
-
-function applyZoom() {
-
-    const media =
-        elements.mediaWrapper
-            ?.querySelector(
-                ".viewer-image, .viewer-video"
-            );
-
-
-    if (!media) {
-        return;
-    }
-
-
-    media.style.transform =
-        `scale(${state.zoom})`;
-
-
-    updateZoomUI();
-}
-
-
-function updateZoomUI() {
-
-    if (
-        elements.zoomSlider
-    ) {
-
-        elements.zoomSlider.value =
-            String(
-                state.zoom
-            );
-    }
-}
-
-
-/* ============================================================
-   FULLSCREEN
-   ============================================================ */
-
-function setupFullscreen() {
-
-    if (
-        !elements.fullscreenButton
-    ) {
-        return;
-    }
-
-
-    on(
-        elements.fullscreenButton,
-        "click",
-        async () => {
-
-            try {
-
-                if (
-                    !document.fullscreenElement
-                ) {
-
-                    await document.documentElement
-                        .requestFullscreen();
-
-                } else {
-
-                    await document.exitFullscreen();
-                }
-
-            } catch (error) {
-
-                console.warn(
-                    "Fullscreen unavailable:",
-                    error
-                );
-            }
-        }
-    );
-}
-
-
-/* ============================================================
-   DASHBOARD BUTTON
-   ============================================================ */
-
-function setupDashboardButton() {
-
-    on(
-        elements.openDashboard,
-        "click",
-        openDashboard
-    );
-}
-
-
-/* ============================================================
-   OPEN DASHBOARD
-   ============================================================ */
-
-function openDashboard() {
-
-    if (
-        state.sessionStarted
-    ) {
-
-        endSession();
-
-    } else {
-
-        commitCurrentMediaTime();
-    }
-
-
+    state.currentMediaIndex =
+        0;
     state.dashboardReturnScreen =
         "viewer";
-
-
-    renderDashboard();
-
-
-    showScreen(
-        "dashboard"
-    );
-}
-
-
-/* ============================================================
-   DASHBOARD INITIALIZATION
-   ============================================================ */
-
-function initializeDashboard() {
-
-    on(
-        elements.dashboardBack,
-        "click",
-        backToViewer
-    );
-
-
-    on(
-        elements.monthSelector,
-        "change",
-        event => {
-
-            state.selectedDashboardMonth =
-                event.target.value;
-
-
-            renderDashboard();
-        }
-    );
-}
-
-
-/* ============================================================
-   BACK TO VIEWER
-   ============================================================ */
-
-function backToViewer() {
-
-    renderDashboard();
-
-
     showScreen(
         "viewer"
     );
-
-
-    window.setTimeout(
-        () => {
-
-            if (
-                !state.sessionStarted
-            ) {
-
-                startSession();
-            }
-
-
-            loadMedia(
-                state.currentMediaIndex,
-                true
-            );
-
-        },
-        CONFIG.transitionDuration + 40
-    );
-}
-
-
-/* ============================================================
-   MONTH HELPERS
-   ============================================================ */
-
-function getMonthKey(
-    date = new Date()
-) {
-
-    const year =
-        date.getFullYear();
-
-
-    const month =
-        String(
-            date.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
+    window.setTimeout(() => {
+        loadMedia(
+            state.currentMediaIndex
         );
-
-
-    return `${year}-${month}`;
+    }, CONFIG.transitionDuration + 40);
 }
-
-
-function formatMonth(
-    monthKey
-) {
-
-    if (!monthKey) {
-        return "—";
-    }
-
-
-    const [
-        year,
-        month
-    ] =
-        monthKey.split(
-            "-"
-        );
-
-
-    const date =
-        new Date(
-            Number(year),
-            Number(month) - 1,
-            1
-        );
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return monthKey;
-    }
-
-
-    return date.toLocaleDateString(
-        undefined,
-        {
-            month: "long",
-            year: "numeric"
-        }
-    );
-}
-
-
-/* ============================================================
-   MONTH SELECTOR
-   ============================================================ */
-
-function initializeMonthSelector() {
-
-    if (
-        !elements.monthSelector
-    ) {
+function loadMedia(index) {
+    const media =
+        getMedia(index);
+    if (!media || !mediaWrapper) {
         return;
     }
-
-
-    const months =
-        new Set();
-
-
-    months.add(
-        getMonthKey()
-    );
-
-
-    analytics.sessions.forEach(
-        session => {
-
-            const date =
-                session.date ||
-                (
-                    session.startedAt
-                        ? session.startedAt.slice(
-                            0,
-                            7
-                        )
-                        : null
-                );
-
-
-            if (date) {
-
-                months.add(
-                    date.slice(
-                        0,
-                        7
-                    )
-                );
-            }
-        }
-    );
-
-
-    Object.values(
-        analytics.media || {}
-    ).forEach(
-        stats => {
-
-            Object.keys(
-                stats.monthly || {}
-            ).forEach(
-                month => {
-
-                    months.add(
-                        month
-                    );
-                }
-            );
-        }
-    );
-
-
-    const sorted =
-        [...months]
-            .sort()
-            .reverse();
-
-
-    elements.monthSelector.innerHTML =
-        "";
-
-
-    sorted.forEach(
-        month => {
-
-            const option =
-                document.createElement(
-                    "option"
-                );
-
-
-            option.value =
-                month;
-
-
-            option.textContent =
-                formatMonth(
-                    month
-                );
-
-
-            elements.monthSelector.appendChild(
-                option
-            );
-        }
-    );
-
-
-    const selected =
-        state.selectedDashboardMonth;
-
-
     if (
-        selected &&
-        months.has(
-            selected
-        )
+        state.currentMediaElement
     ) {
-
-        elements.monthSelector.value =
-            selected;
-
-    } else {
-
-        elements.monthSelector.value =
-            getMonthKey();
-
-
-        state.selectedDashboardMonth =
-            elements.monthSelector.value;
+        commitCurrentMediaTime();
+        cleanupCurrentMediaElement();
     }
-}
-
-
-/* ============================================================
-   DASHBOARD RENDER
-   ============================================================ */
-
-function renderDashboard() {
-
-    initializeMonthSelector();
-
-
-    const monthKey =
-        elements.monthSelector?.value ||
-        state.selectedDashboardMonth ||
-        getMonthKey();
-
-
-    state.selectedDashboardMonth =
-        monthKey;
-
-
-    if (
-        elements.currentMonthLabel
-    ) {
-
-        elements.currentMonthLabel.textContent =
-            formatMonth(
-                monthKey
-            );
-    }
-
-
-    renderMonthlyAnalytics(
-        monthKey
-    );
-
-
-    renderLifetimeAnalytics();
-}
-
-
-/* ============================================================
-   MONTHLY SESSION DATA
-   ============================================================ */
-
-function getMonthSessions(
-    monthKey
-) {
-
-    return (
-        analytics.sessions || []
-    ).filter(
-        session => {
-
-            const date =
-                session.date ||
-                (
-                    session.startedAt
-                        ? session.startedAt.slice(
-                            0,
-                            7
-                        )
-                        : null
-                );
-
-
-            return (
-                date &&
-                date.startsWith(
-                    monthKey
-                )
-            );
-        }
-    );
-}
-
-
-/* ============================================================
-   DAILY WATCH TIMES
-   ============================================================ */
-
-function getDailyWatchTimes(
-    monthKey
-) {
-
-    const daily = {};
-
-
-    getMonthSessions(
-        monthKey
-    ).forEach(
-        session => {
-
-            const date =
-                session.date ||
-                session.startedAt?.slice(
-                    0,
-                    10
-                );
-
-
-            if (!date) {
-                return;
-            }
-
-
-            daily[date] =
-                normalizeSeconds(
-                    daily[date]
-                ) +
-                normalizeSeconds(
-                    session.watchTime ??
-                    session.duration
-                );
-        }
-    );
-
-
-    return daily;
-}
-
-
-/* ============================================================
-   DAILY SESSION COUNTS
-   ============================================================ */
-
-function getDailySessionCounts(
-    monthKey
-) {
-
-    const daily = {};
-
-
-    getMonthSessions(
-        monthKey
-    ).forEach(
-        session => {
-
-            const date =
-                session.date ||
-                session.startedAt?.slice(
-                    0,
-                    10
-                );
-
-
-            if (!date) {
-                return;
-            }
-
-
-            daily[date] =
-                normalizeSeconds(
-                    daily[date]
-                ) + 1;
-        }
-    );
-
-
-    return daily;
-}
-
-
-/* ============================================================
-   FIND EXTREME
-   ============================================================ */
-
-function findExtreme(
-    values,
-    mode = "highest"
-) {
-
-    const entries =
-        Object.entries(
-            values || {}
-        );
-
-
-    if (!entries.length) {
-
-        return {
-            key: null,
-            value: 0
-        };
-    }
-
-
-    let result =
-        entries[0];
-
-
-    for (
-        const entry of entries
-    ) {
-
-        const value =
-            Number(
-                entry[1]
-            ) || 0;
-
-
-        const current =
-            Number(
-                result[1]
-            ) || 0;
-
-
-        if (
-            mode === "highest" &&
-            value > current
-        ) {
-
-            result =
-                entry;
-        }
-
-
-        if (
-            mode === "lowest" &&
-            value < current
-        ) {
-
-            result =
-                entry;
-        }
-    }
-
-
-    return {
-
-        key:
-            result[0],
-
-        value:
-            Number(
-                result[1]
-            ) || 0
-    };
-}
-
-
-/* ============================================================
-   MOST WATCHED MEDIA
-   ============================================================ */
-
-function getMostWatchedMedia(
-    type,
-    monthKey = null
-) {
-
-    const library =
-        type === "photo"
-            ? photos
-            : videos;
-
-
-    let winner =
-        null;
-
-
-    let bestTime =
+    state.currentMediaIndex =
+        index;
+    state.zoom =
+        CONFIG.minZoom;
+    state.mediaElapsedSeconds =
         0;
-
-
-    for (
-        const media of library
-    ) {
-
-        const stats =
-            analytics.media[
-                media.id
-            ];
-
-
-        if (!stats) {
-            continue;
-        }
-
-
-        const time =
-            monthKey
-                ? normalizeSeconds(
-                    stats.monthly?.[
-                        monthKey
-                    ]
-                )
-                : normalizeSeconds(
-                    stats.totalWatchTime
-                );
-
-
-        if (
-            time > bestTime
-        ) {
-
-            bestTime =
-                time;
-
-
-            winner =
-                media;
-        }
-    }
-
-
-    return {
-
-        media:
-            winner,
-
-        time:
-            bestTime
-    };
-}
-
-
-/* ============================================================
-   MOST VIEWED MEDIA
-   ============================================================ */
-
-function getMostViewedMedia(
-    type,
-    monthKey = null
-) {
-
-    const library =
-        type === "photo"
-            ? photos
-            : videos;
-
-
-    let winner =
-        null;
-
-
-    let bestViews =
-        0;
-
-
-    for (
-        const media of library
-    ) {
-
-        const stats =
-            analytics.media[
-                media.id
-            ];
-
-
-        if (!stats) {
-            continue;
-        }
-
-
-        const views =
-            monthKey
-                ? normalizeSeconds(
-                    stats.monthlyViews?.[
-                        monthKey
-                    ]
-                )
-                : normalizeSeconds(
-                    stats.totalViews
-                );
-
-
-        if (
-            views > bestViews
-        ) {
-
-            bestViews =
-                views;
-
-
-            winner =
-                media;
-        }
-    }
-
-
-    return {
-
-        media:
-            winner,
-
-        views:
-            bestViews
-    };
-}
-
-
-/* ============================================================
-   MONTHLY ANALYTICS
-   ============================================================ */
-
-function renderMonthlyAnalytics(
-    monthKey
-) {
-
-    const sessions =
-        getMonthSessions(
-            monthKey
-        );
-
-
-    const dailyWatch =
-        getDailyWatchTimes(
-            monthKey
-        );
-
-
-    const dailySessions =
-        getDailySessionCounts(
-            monthKey
-        );
-
-
-    const totalWatchTime =
-        sessions.reduce(
-            (
-                sum,
-                session
-            ) =>
-                sum +
-                normalizeSeconds(
-                    session.watchTime ??
-                    session.duration
-                ),
-            0
-        );
-
-
-    const highestTime =
-        findExtreme(
-            dailyWatch,
-            "highest"
-        );
-
-
-    const lowestTime =
-        findExtreme(
-            dailyWatch,
-            "lowest"
-        );
-
-
-    const highestSession =
-        findExtreme(
-            dailySessions,
-            "highest"
-        );
-
-
-    const lowestSession =
-        findExtreme(
-            dailySessions,
-            "lowest"
-        );
-
-
-    const averageTime =
-        sessions.length
-            ? totalWatchTime /
-              sessions.length
-            : 0;
-
-
-    const mostWatchedPhoto =
-        getMostWatchedMedia(
-            "photo",
-            monthKey
-        );
-
-
-    const mostWatchedVideo =
-        getMostWatchedMedia(
-            "video",
-            monthKey
-        );
-
-
-    setText(
-        "monthly-highest-time",
-        highestTime.key
-            ? formatTime(
-                highestTime.value
-            )
-            : "—"
-    );
-
-
-    setText(
-        "monthly-highest-time-date",
-        highestTime.key
-            ? formatDate(
-                highestTime.key
-            )
-            : "No data"
-    );
-
-
-    setText(
-        "monthly-lowest-time",
-        lowestTime.key
-            ? formatTime(
-                lowestTime.value
-            )
-            : "—"
-    );
-
-
-    setText(
-        "monthly-lowest-time-date",
-        lowestTime.key
-            ? formatDate(
-                lowestTime.key
-            )
-            : "No data"
-    );
-
-
-    setText(
-        "monthly-average-time",
-        sessions.length
-            ? formatTime(
-                averageTime
-            )
-            : "—"
-    );
-
-
-    setText(
-        "monthly-most-watched-video",
-        mostWatchedVideo.media
-            ? mostWatchedVideo.media.name
-            : "No data"
-    );
-
-
-    setText(
-        "monthly-most-watched-video-time",
-        mostWatchedVideo.media
-            ? formatTime(
-                mostWatchedVideo.time
-            )
-            : "—"
-    );
-
-
-    setText(
-        "monthly-most-watched-photo",
-        mostWatchedPhoto.media
-            ? mostWatchedPhoto.media.name
-            : "No data"
-    );
-
-
-    setText(
-        "monthly-most-watched-photo-time",
-        mostWatchedPhoto.media
-            ? formatTime(
-                mostWatchedPhoto.time
-            )
-            : "—"
-    );
-
-
-    setText(
-        "monthly-total-sessions",
-        sessions.length
-    );
-
-
-    setText(
-        "monthly-highest-session",
-        highestSession.key
-            ? `${highestSession.value} sessions`
-            : "—"
-    );
-
-
-    setText(
-        "monthly-highest-session-date",
-        highestSession.key
-            ? formatDate(
-                highestSession.key
-            )
-            : "No data"
-    );
-
-
-    setText(
-        "monthly-lowest-session",
-        lowestSession.key
-            ? `${lowestSession.value} sessions`
-            : "—"
-    );
-
-
-    setText(
-        "monthly-lowest-session-date",
-        lowestSession.key
-            ? formatDate(
-                lowestSession.key
-            )
-            : "No data"
-    );
-
-
-    setText(
-        "monthly-total-watch-time",
-        formatTime(
-            totalWatchTime
-        )
-    );
-
-
-    renderMostWatchedMedia(
-        "monthly-most-watched-photo-media",
-        mostWatchedPhoto.media,
-        mostWatchedPhoto.time
-    );
-
-
-    renderMostWatchedMedia(
-        "monthly-most-watched-video-media",
-        mostWatchedVideo.media,
-        mostWatchedVideo.time
-    );
-}
-
-
-/* ============================================================
-   LIFETIME ANALYTICS
-   ============================================================ */
-
-function renderLifetimeAnalytics() {
-
-    const sessions =
-        analytics.sessions || [];
-
-
-    const totalSessions =
-        sessions.length;
-
-
-    const totalWatchTime =
-        Object.values(
-            analytics.media || {}
-        ).reduce(
-            (
-                sum,
-                stats
-            ) =>
-                sum +
-                normalizeSeconds(
-                    stats.totalWatchTime
-                ),
-            0
-        );
-
-
-    const mostWatchedPhoto =
-        getMostWatchedMedia(
-            "photo"
-        );
-
-
-    const mostWatchedVideo =
-        getMostWatchedMedia(
-            "video"
-        );
-
-
-    const dailyWatch =
-        {};
-
-
-    const dailySessions =
-        {};
-
-
-    sessions.forEach(
-        session => {
-
-            const date =
-                session.date ||
-                session.startedAt?.slice(
-                    0,
-                    10
-                );
-
-
-            if (!date) {
-                return;
-            }
-
-
-            dailyWatch[date] =
-                normalizeSeconds(
-                    dailyWatch[date]
-                ) +
-                normalizeSeconds(
-                    session.watchTime ??
-                    session.duration
-                );
-
-
-            dailySessions[date] =
-                normalizeSeconds(
-                    dailySessions[date]
-                ) + 1;
-        }
-    );
-
-
-    const highestSession =
-        findExtreme(
-            dailySessions,
-            "highest"
-        );
-
-
-    const highestWatch =
-        findExtreme(
-            dailyWatch,
-            "highest"
-        );
-
-
-    setText(
-        "lifetime-total-hours",
-        formatLifetimeHours(
-            totalWatchTime
-        )
-    );
-
-
-    setText(
-        "lifetime-watch-hours",
-        formatLifetimeHours(
-            totalWatchTime
-        )
-    );
-
-
-    setText(
-        "lifetime-watch-time",
-        formatLifetimeHours(
-            totalWatchTime
-        )
-    );
-
-
-    setText(
-        "lifetime-most-watched-photo",
-        mostWatchedPhoto.media
-            ? mostWatchedPhoto.media.name
-            : "No data"
-    );
-
-
-    setText(
-        "lifetime-most-watched-photo-time",
-        mostWatchedPhoto.media
-            ? formatTime(
-                mostWatchedPhoto.time
-            )
-            : "—"
-    );
-
-
-    setText(
-        "lifetime-most-watched-video",
-        mostWatchedVideo.media
-            ? mostWatchedVideo.media.name
-            : "No data"
-    );
-
-
-    setText(
-        "lifetime-most-watched-video-time",
-        mostWatchedVideo.media
-            ? formatTime(
-                mostWatchedVideo.time
-            )
-            : "—"
-    );
-
-
-    setText(
-        "lifetime-total-sessions",
-        totalSessions
-    );
-
-
-    setText(
-        "lifetime-sessions",
-        totalSessions
-    );
-
-
-    setText(
-        "lifetime-time-spend",
-        formatLifetimeHours(
-            totalWatchTime
-        )
-    );
-
-
-    setText(
-        "lifetime-highest-session",
-        highestSession.key
-            ? `${highestSession.value} sessions`
-            : "—"
-    );
-
-
-    setText(
-        "lifetime-highest-session-date",
-        highestSession.key
-            ? formatDate(
-                highestSession.key
-            )
-            : "No data"
-    );
-
-
-    setText(
-        "lifetime-highest-time",
-        highestWatch.key
-            ? formatTime(
-                highestWatch.value
-            )
-            : "—"
-    );
-
-
-    setText(
-        "lifetime-highest-time-date",
-        highestWatch.key
-            ? formatDate(
-                highestWatch.key
-            )
-            : "No data"
-    );
-
-
-    renderMostWatchedMedia(
-        "lifetime-most-watched-photo-media",
-        mostWatchedPhoto.media,
-        mostWatchedPhoto.time
-    );
-
-
-    renderMostWatchedMedia(
-        "lifetime-most-watched-video-media",
-        mostWatchedVideo.media,
-        mostWatchedVideo.time
-    );
-}
-
-
-/* ============================================================
-   LIFETIME HOURS
-   ============================================================ */
-
-function formatLifetimeHours(
-    seconds
-) {
-
-    seconds =
-        normalizeSeconds(
-            seconds
-        );
-
-
-    const hours =
-        Math.floor(
-            seconds / 3600
-        );
-
-
-    const minutes =
-        Math.floor(
-            (
-                seconds % 3600
-            ) / 60
-        );
-
-
-    if (
-        hours > 0
-    ) {
-
-        return `${hours}h ${minutes}m`;
-    }
-
-
-    return `${minutes}m`;
-}
-
-
-/* ============================================================
-   DASHBOARD MEDIA PREVIEW
-   ============================================================ */
-
-function renderMostWatchedMedia(
-    containerId,
-    media,
-    watchTime
-) {
-
-    const container =
-        $(containerId);
-
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML =
+    state.mediaStartTimestamp =
+        Date.now();
+    mediaWrapper.innerHTML =
         "";
-
-
-    if (!media) {
-
-        const empty =
-            document.createElement(
-                "div"
-            );
-
-
-        empty.className =
-            "dashboard-empty";
-
-
-        empty.textContent =
-            "No data yet";
-
-
-        container.appendChild(
-            empty
-        );
-
-
-        return;
-    }
-
-
     let element;
-
-
-    if (
-        media.type === "photo"
-    ) {
-
+    if (media.type === "photo") {
         element =
             document.createElement(
                 "img"
             );
-
-
+        element.className =
+            "viewer-image viewer-photo";
         element.src =
             media.path;
-
-
         element.alt =
             media.name;
-
-
-        element.className =
-            "most-watched-media-image";
-
-
+        element.draggable =
+            false;
+        element.decoding =
+            "async";
         element.loading =
-            "lazy";
-
+            "eager";
     } else {
-
         element =
             document.createElement(
                 "video"
             );
-
-
+        element.className =
+            "viewer-video";
         element.src =
             media.path;
-
-
-        element.className =
-            "most-watched-media-video";
-
-
         element.autoplay =
             true;
-
-
         element.loop =
             true;
-
-
         element.muted =
             true;
-
-
         element.defaultMuted =
             true;
-
-
         element.playsInline =
             true;
-
-
         element.controls =
             false;
-
-
         element.preload =
-            "metadata";
-
-
+            "auto";
         on(
             element,
             "loadeddata",
             () => {
-
-                element.play().catch(
-                    () => {}
-                );
+                element.play()
+                    .catch(() => {});
             }
         );
     }
-
-
-    container.appendChild(
+    mediaWrapper.appendChild(
         element
     );
-
-
-    const time =
-        document.createElement(
-            "span"
-        );
-
-
-    time.className =
-        "most-watched-time";
-
-
-    time.textContent =
-        formatTime(
-            watchTime
-        );
-
-
-    container.appendChild(
-        time
+    state.currentMediaElement =
+        element;
+    registerMediaOpen(
+        media
     );
-}
-
-
-/* ============================================================
-   TEXT HELPERS
-   ============================================================ */
-
-function setText(
-    id,
-    value
-) {
-
-    const element =
-        $(id);
-
-
-    if (element) {
-
-        element.textContent =
-            String(
-                value
-            );
-    }
-}
-
-
-function formatDate(
-    value
-) {
-
-    if (!value) {
-        return "—";
-    }
-
-
-    let date;
-
-
-    if (
-        /^\d{4}-\d{2}-\d{2}$/.test(
-            String(value)
-        )
-    ) {
-
-        const [
-            year,
-            month,
-            day
-        ] =
-            String(value).split(
-                "-"
-            );
-
-
-        date =
-            new Date(
-                Number(year),
-                Number(month) - 1,
-                Number(day)
-            );
-
-    } else {
-
-        date =
-            new Date(
-                value
-            );
-    }
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return "—";
-    }
-
-
-    return date.toLocaleDateString(
-        undefined,
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        }
-    );
-}
-
-
-/* ============================================================
-   HTML ESCAPE
-   ============================================================ */
-
-function escapeHtml(
-    value
-) {
-
-    return String(
-        value
-    )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-}
+    applyZoom();
+    updateViewerUI();
+    startMediaTimer();
     on(
         element,
         "error",
@@ -3960,31 +1340,21 @@ function escapeHtml(
         }
     );
 }
-
-
-/* =========================================================
-   CLEANUP CURRENT MEDIA
-========================================================= */
-
 function cleanupCurrentMediaElement() {
     const element =
         state.currentMediaElement;
-
     if (!element) {
         return;
     }
-
     try {
         if (
             element.tagName ===
             "VIDEO"
         ) {
             element.pause();
-
             element.removeAttribute(
                 "src"
             );
-
             element.load();
         }
     } catch (error) {
@@ -3993,108 +1363,72 @@ function cleanupCurrentMediaElement() {
             error
         );
     }
-
     state.currentMediaElement =
         null;
 }
-
-
-/* =========================================================
-   MEDIA ERROR
-========================================================= */
-
 function showMediaError(media) {
     if (!mediaWrapper) {
         return;
     }
-
     let message =
         media.type === "photo"
             ? "Photo could not be loaded."
             : "Video could not be loaded.";
-
     const existing =
         mediaWrapper.querySelector(
             ".media-error-message"
         );
-
     if (existing) {
         existing.remove();
     }
-
     const error =
         document.createElement(
             "div"
         );
-
     error.className =
         "media-error-message";
-
     error.textContent =
         `${message} ${media.file}`;
-
     mediaWrapper.appendChild(
         error
     );
 }
-
-
-/* =========================================================
-   PREVIOUS MEDIA
-========================================================= */
-
 function previousMedia() {
     if (!mediaLibrary.length) {
         return;
     }
-
     commitCurrentMediaTime();
-
     let nextIndex =
         state.currentMediaIndex - 1;
-
     if (nextIndex < 0) {
         nextIndex =
             mediaLibrary.length - 1;
     }
-
     loadMedia(
         nextIndex
     );
 }
-
-
-/* =========================================================
-   NEXT MEDIA
-========================================================= */
-
 function nextMedia() {
     if (!mediaLibrary.length) {
         return;
     }
-
     commitCurrentMediaTime();
-
-    let nextIndex =
+    const nextIndex =
         state.currentMediaIndex + 1;
-
-    if (
-        nextIndex >=
-        mediaLibrary.length
-    ) {
-        nextIndex = 0;
+    if (nextIndex >= mediaLibrary.length) {
+        endSession();
+        state.dashboardReturnScreen =
+            "viewer";
+        renderDashboard();
+        showScreen(
+            "dashboard"
+        );
+        return;
     }
-
     loadMedia(
         nextIndex
     );
 }
-
-
-/* =========================================================
-   ZOOM
-========================================================= */
-
 function setZoom(value) {
     state.zoom =
         clamp(
@@ -4102,35 +1436,23 @@ function setZoom(value) {
             CONFIG.minZoom,
             CONFIG.maxZoom
         );
-
     if (zoomSlider) {
         zoomSlider.value =
             String(state.zoom);
     }
-
     applyZoom();
 }
-
-
 function applyZoom() {
     if (
         !state.currentMediaElement
     ) {
         return;
     }
-
     state.currentMediaElement.style.transform =
         `scale(${state.zoom})`;
-
     state.currentMediaElement.style.transformOrigin =
         "center center";
 }
-
-
-/* =========================================================
-   VOLUME
-========================================================= */
-
 function setVolume(value) {
     state.volume =
         clamp(
@@ -4138,69 +1460,40 @@ function setVolume(value) {
             0,
             1
         );
-
-    /*
-       If user manually moves volume,
-       unmute automatically.
-    */
-
     if (state.volume > 0) {
         state.muted =
             false;
     }
-
     if (volumeSlider) {
         volumeSlider.value =
             String(state.volume);
     }
-
     applyAudioSettings();
-
     if (state.previewAudio) {
         state.previewAudio.volume =
             state.volume;
-
         state.previewAudio.muted =
             state.muted;
     }
-
     updateVolumeUI();
-
     savePreferences();
 }
-
-
-/* =========================================================
-   TOGGLE MUTE
-========================================================= */
-
 function toggleMute() {
     state.muted =
         !state.muted;
-
     applyAudioSettings();
-
     if (state.previewAudio) {
         state.previewAudio.muted =
             state.muted;
     }
-
     updateVolumeUI();
-
     savePreferences();
 }
-
-
-/* =========================================================
-   VOLUME UI
-========================================================= */
-
 function updateVolumeUI() {
     if (volumeSlider) {
         volumeSlider.value =
             String(state.volume);
     }
-
     if (muteButton) {
         muteButton.setAttribute(
             "aria-label",
@@ -4208,13 +1501,11 @@ function updateVolumeUI() {
                 ? "Unmute"
                 : "Mute"
         );
-
         muteButton.classList.toggle(
             "muted",
             state.muted
         );
     }
-
     if (volumeButton) {
         volumeButton.setAttribute(
             "aria-label",
@@ -4222,13 +1513,11 @@ function updateVolumeUI() {
                 ? "Unmute"
                 : "Mute"
         );
-
         volumeButton.classList.toggle(
             "muted",
             state.muted
         );
     }
-
     if (volumeControl) {
         volumeControl.classList.toggle(
             "is-muted",
@@ -4236,12 +1525,6 @@ function updateVolumeUI() {
         );
     }
 }
-
-
-/* =========================================================
-   FULLSCREEN
-========================================================= */
-
 async function toggleFullscreen() {
     try {
         if (
@@ -4250,7 +1533,6 @@ async function toggleFullscreen() {
             const target =
                 viewerScreen ||
                 document.documentElement;
-
             if (
                 target.requestFullscreen
             ) {
@@ -4270,70 +1552,46 @@ async function toggleFullscreen() {
         );
     }
 }
-
-
-/* =========================================================
-   VIEWER UI
-========================================================= */
-
 function updateViewerUI() {
     const media =
         getMedia(
             state.currentMediaIndex
         );
-
     if (!media) {
         return;
     }
-
     if (currentMediaName) {
         currentMediaName.textContent =
             media.name;
     }
-
     if (mediaPosition) {
         mediaPosition.textContent =
             `${state.currentMediaIndex + 1} / ${mediaLibrary.length}`;
     }
-
     if (mediaWatchTime) {
         mediaWatchTime.textContent =
             formatClock(
                 state.mediaElapsedSeconds
             );
     }
-
     if (zoomSlider) {
         zoomSlider.min =
             String(CONFIG.minZoom);
-
         zoomSlider.max =
             String(CONFIG.maxZoom);
-
         zoomSlider.step =
             String(CONFIG.zoomStep);
-
         zoomSlider.value =
             String(state.zoom);
     }
 }
-
-
-/* =========================================================
-   MEDIA TIMER
-========================================================= */
-
 function startMediaTimer() {
     stopMediaTimer();
-
     state.mediaStartTimestamp =
         Date.now();
-
     state.mediaElapsedSeconds =
         0;
-
     updateViewerTimer();
-
     state.timerInterval =
         window.setInterval(
             () => {
@@ -4343,16 +1601,8 @@ function startMediaTimer() {
                 ) {
                     return;
                 }
-
                 state.mediaElapsedSeconds++;
-
                 updateViewerTimer();
-
-                /*
-                   Commit periodically rather than waiting
-                   until navigation.
-                */
-
                 if (
                     state.mediaElapsedSeconds % 5 ===
                     0
@@ -4360,7 +1610,6 @@ function startMediaTimer() {
                     commitCurrentMediaTime(
                         false
                     );
-
                     state.mediaStartTimestamp =
                         Date.now();
                 }
@@ -4368,12 +1617,6 @@ function startMediaTimer() {
             CONFIG.timerInterval
         );
 }
-
-
-/* =========================================================
-   UPDATE TIMER UI
-========================================================= */
-
 function updateViewerTimer() {
     if (mediaWatchTime) {
         mediaWatchTime.textContent =
@@ -4382,12 +1625,6 @@ function updateViewerTimer() {
             );
     }
 }
-
-
-/* =========================================================
-   STOP MEDIA TIMER
-========================================================= */
-
 function stopMediaTimer() {
     if (
         state.timerInterval
@@ -4395,38 +1632,26 @@ function stopMediaTimer() {
         window.clearInterval(
             state.timerInterval
         );
-
         state.timerInterval =
             null;
     }
 }
-
-
-/* =========================================================
-   ENSURE MEDIA ANALYTICS
-========================================================= */
-
 function ensureMediaAnalytics(media) {
     if (!media) {
         return null;
     }
-
     if (
         !analytics.media[media.id]
     ) {
         analytics.media[media.id] = {
             totalWatchTime: 0,
             totalViews: 0,
-
             monthly: {},
             monthlyViews: {}
         };
     }
-
     const stats =
         analytics.media[media.id];
-
-
     if (
         !stats.monthly ||
         typeof stats.monthly !==
@@ -4434,8 +1659,6 @@ function ensureMediaAnalytics(media) {
     ) {
         stats.monthly = {};
     }
-
-
     if (
         !stats.monthlyViews ||
         typeof stats.monthlyViews !==
@@ -4443,52 +1666,35 @@ function ensureMediaAnalytics(media) {
     ) {
         stats.monthlyViews = {};
     }
-
-
     stats.totalWatchTime =
         normalizeSeconds(
             stats.totalWatchTime
         );
-
     stats.totalViews =
         normalizeSeconds(
             stats.totalViews
         );
-
     return stats;
 }
-
-
-/* =========================================================
-   REGISTER MEDIA OPEN
-========================================================= */
-
 function registerMediaOpen(media) {
     if (!media) {
         return;
     }
-
     const stats =
         ensureMediaAnalytics(
             media
         );
-
     const monthKey =
         getMonthKey();
-
     stats.totalViews++;
-
     stats.monthlyViews[monthKey] =
         normalizeSeconds(
             stats.monthlyViews[monthKey]
         ) + 1;
-
-
     if (
         state.currentSession
     ) {
         state.currentSession.mediaOpened++;
-
         if (
             !state.currentSession.uniqueMedia.includes(
                 media.id
@@ -4499,15 +1705,8 @@ function registerMediaOpen(media) {
             );
         }
     }
-
     saveAnalytics();
 }
-
-
-/* =========================================================
-   COMMIT CURRENT MEDIA TIME
-========================================================= */
-
 function commitCurrentMediaTime(
     save = true
 ) {
@@ -4516,74 +1715,50 @@ function commitCurrentMediaTime(
     ) {
         return;
     }
-
     const seconds =
         normalizeSeconds(
             state.mediaElapsedSeconds
         );
-
     if (seconds <= 0) {
         return;
     }
-
     const media =
         getMedia(
             state.currentMediaIndex
         );
-
     if (!media) {
         return;
     }
-
     const stats =
         ensureMediaAnalytics(
             media
         );
-
     const monthKey =
         getMonthKey();
-
     stats.totalWatchTime +=
         seconds;
-
     stats.monthly[monthKey] =
         normalizeSeconds(
             stats.monthly[monthKey]
         ) + seconds;
-
-
     state.currentSession.watchTime +=
         seconds;
-
-
     state.mediaElapsedSeconds =
         0;
-
     state.mediaStartTimestamp =
         Date.now();
-
-
     if (save) {
         saveAnalytics();
     }
 }
-
-
-/* =========================================================
-   VISIBILITY HANDLING
-========================================================= */
-
 function handleVisibilityChange() {
     state.pageVisible =
         !document.hidden;
-
     if (
         document.hidden
     ) {
         commitCurrentMediaTime();
-
         saveAnalytics();
-
         savePreferences();
     } else {
         if (
@@ -4594,34 +1769,14 @@ function handleVisibilityChange() {
         }
     }
 }
-
-
-/* =========================================================
-   PAGE EXIT
-========================================================= */
-
 function handlePageExit() {
     commitCurrentMediaTime();
-
     saveAnalytics();
-
     savePreferences();
 }
-
-
-/* =========================================================
-   KEYBOARD CONTROLS
-========================================================= */
-
 function handleKeyboard(event) {
-
-    /*
-       Do not hijack keyboard input fields.
-    */
-
     const target =
         event.target;
-
     if (
         target &&
         (
@@ -4633,62 +1788,47 @@ function handleKeyboard(event) {
     ) {
         return;
     }
-
-
     if (
         state.currentScreen !==
         "viewer"
     ) {
         return;
     }
-
-
     switch (event.key) {
-
         case "ArrowRight":
             event.preventDefault();
             nextMedia();
             break;
-
         case "ArrowLeft":
             event.preventDefault();
             previousMedia();
             break;
-
         case "+":
         case "=":
             event.preventDefault();
-
             setZoom(
                 state.zoom +
                 CONFIG.zoomStep
             );
-
             break;
-
         case "-":
         case "_":
             event.preventDefault();
-
             setZoom(
                 state.zoom -
                 CONFIG.zoomStep
             );
-
             break;
-
         case "m":
         case "M":
             event.preventDefault();
             toggleMute();
             break;
-
         case "f":
         case "F":
             event.preventDefault();
             toggleFullscreen();
             break;
-
         case "Escape":
             if (
                 document.fullscreenElement
@@ -4699,65 +1839,42 @@ function handleKeyboard(event) {
             break;
     }
 }
-
-
-/* =========================================================
-   DASHBOARD NAVIGATION
-========================================================= */
-
 function openDashboard() {
-    commitCurrentMediaTime();
-
+    if (state.sessionStarted) {
+        endSession();
+    } else {
+        commitCurrentMediaTime();
+    }
     state.dashboardReturnScreen =
         "viewer";
-
     renderDashboard();
-
     showScreen(
         "dashboard"
     );
 }
-
-
 function backToViewer() {
     renderDashboard();
-
     showScreen(
         "viewer"
     );
-
     window.setTimeout(() => {
-
-        /*
-           Do not register another media view.
-           Just restore the current media.
-        */
-
+        if (!state.sessionStarted) {
+            startSession();
+        }
         loadMedia(
             state.currentMediaIndex
         );
-
     }, CONFIG.transitionDuration + 40);
 }
-
-
-/* =========================================================
-   MONTH SELECTOR
-========================================================= */
-
 function initializeMonthSelector() {
     if (!monthSelector) {
         return;
     }
-
     const months =
         new Set();
-
     months.add(
         getMonthKey()
     );
-
-
     analytics.sessions.forEach(
         session => {
             if (session.date) {
@@ -4770,8 +1887,6 @@ function initializeMonthSelector() {
             }
         }
     );
-
-
     Object.values(
         analytics.media
     ).forEach(
@@ -4787,40 +1902,29 @@ function initializeMonthSelector() {
             );
         }
     );
-
-
     const sorted =
         [...months]
             .sort()
             .reverse();
-
-
     monthSelector.innerHTML =
         "";
-
-
     sorted.forEach(
         month => {
             const option =
                 document.createElement(
                     "option"
                 );
-
             option.value =
                 month;
-
             option.textContent =
                 formatMonth(
                     month
                 );
-
             monthSelector.appendChild(
                 option
             );
         }
     );
-
-
     if (
         months.has(
             state.selectedDashboardMonth
@@ -4831,47 +1935,29 @@ function initializeMonthSelector() {
     } else {
         monthSelector.value =
             getMonthKey();
-
         state.selectedDashboardMonth =
             monthSelector.value;
     }
 }
-
-
-/* =========================================================
-   DASHBOARD RENDER
-========================================================= */
-
 function renderDashboard() {
     initializeMonthSelector();
-
     const monthKey =
         monthSelector?.value ||
         state.selectedDashboardMonth ||
         getMonthKey();
-
     state.selectedDashboardMonth =
         monthKey;
-
     if (currentMonthLabel) {
         currentMonthLabel.textContent =
             formatMonth(
                 monthKey
             );
     }
-
     renderMonthlyAnalytics(
         monthKey
     );
-
     renderLifetimeAnalytics();
 }
-
-
-/* =========================================================
-   MONTHLY SESSION DATA
-========================================================= */
-
 function getMonthSessions(monthKey) {
     return analytics.sessions.filter(
         session =>
@@ -4881,22 +1967,14 @@ function getMonthSessions(monthKey) {
             )
     );
 }
-
-
-/* =========================================================
-   DAILY WATCH TIMES
-========================================================= */
-
 function getDailyWatchTimes(monthKey) {
     const daily = {};
-
     getMonthSessions(
         monthKey
     ).forEach(
         session => {
             const date =
                 session.date;
-
             daily[date] =
                 normalizeSeconds(
                     daily[date]
@@ -4906,40 +1984,24 @@ function getDailyWatchTimes(monthKey) {
                 );
         }
     );
-
     return daily;
 }
-
-
-/* =========================================================
-   DAILY SESSION COUNTS
-========================================================= */
-
 function getDailySessionCounts(monthKey) {
     const daily = {};
-
     getMonthSessions(
         monthKey
     ).forEach(
         session => {
             const date =
                 session.date;
-
             daily[date] =
                 normalizeSeconds(
                     daily[date]
                 ) + 1;
         }
     );
-
     return daily;
 }
-
-
-/* =========================================================
-   FIND EXTREME
-========================================================= */
-
 function findExtreme(
     values,
     mode = "highest"
@@ -4948,28 +2010,21 @@ function findExtreme(
         Object.entries(
             values || {}
         );
-
     if (!entries.length) {
         return {
             key: null,
             value: 0
         };
     }
-
     let result =
         entries[0];
-
-
     for (
         const entry of entries
     ) {
         const value =
             Number(entry[1]) || 0;
-
         const current =
             Number(result[1]) || 0;
-
-
         if (
             mode === "highest" &&
             value > current
@@ -4977,8 +2032,6 @@ function findExtreme(
             result =
                 entry;
         }
-
-
         if (
             mode === "lowest" &&
             value < current
@@ -4987,20 +2040,12 @@ function findExtreme(
                 entry;
         }
     }
-
-
     return {
         key: result[0],
         value:
             Number(result[1]) || 0
     };
 }
-
-
-/* =========================================================
-   MOST WATCHED MEDIA
-========================================================= */
-
 function getMostWatchedMedia(
     type,
     monthKey = null
@@ -5009,10 +2054,8 @@ function getMostWatchedMedia(
         type === "photo"
             ? photos
             : videos;
-
     let winner = null;
     let bestTime = 0;
-
     for (
         const media of library
     ) {
@@ -5020,12 +2063,9 @@ function getMostWatchedMedia(
             analytics.media[
                 media.id
             ];
-
         if (!stats) {
             continue;
         }
-
-
         const time =
             monthKey
                 ? normalizeSeconds(
@@ -5036,31 +2076,20 @@ function getMostWatchedMedia(
                 : normalizeSeconds(
                     stats.totalWatchTime
                 );
-
-
         if (
             time > bestTime
         ) {
             bestTime =
                 time;
-
             winner =
                 media;
         }
     }
-
-
     return {
         media: winner,
         time: bestTime
     };
 }
-
-
-/* =========================================================
-   MOST VIEWED MEDIA
-========================================================= */
-
 function getMostViewedMedia(
     type,
     monthKey = null
@@ -5069,10 +2098,8 @@ function getMostViewedMedia(
         type === "photo"
             ? photos
             : videos;
-
     let winner = null;
     let bestViews = 0;
-
     for (
         const media of library
     ) {
@@ -5080,12 +2107,9 @@ function getMostViewedMedia(
             analytics.media[
                 media.id
             ];
-
         if (!stats) {
             continue;
         }
-
-
         const views =
             monthKey
                 ? normalizeSeconds(
@@ -5096,31 +2120,20 @@ function getMostViewedMedia(
                 : normalizeSeconds(
                     stats.totalViews
                 );
-
-
         if (
             views > bestViews
         ) {
             bestViews =
                 views;
-
             winner =
                 media;
         }
     }
-
-
     return {
         media: winner,
         views: bestViews
     };
 }
-
-
-/* =========================================================
-   MONTHLY ANALYTICS
-========================================================= */
-
 function renderMonthlyAnalytics(
     monthKey
 ) {
@@ -5128,20 +2141,14 @@ function renderMonthlyAnalytics(
         getMonthSessions(
             monthKey
         );
-
-
     const dailyWatch =
         getDailyWatchTimes(
             monthKey
         );
-
-
     const dailySessions =
         getDailySessionCounts(
             monthKey
         );
-
-
     const totalWatchTime =
         sessions.reduce(
             (sum, session) =>
@@ -5151,59 +2158,41 @@ function renderMonthlyAnalytics(
                 ),
             0
         );
-
-
     const highestTime =
         findExtreme(
             dailyWatch,
             "highest"
         );
-
-
     const lowestTime =
         findExtreme(
             dailyWatch,
             "lowest"
         );
-
-
     const highestSession =
         findExtreme(
             dailySessions,
             "highest"
         );
-
-
     const lowestSession =
         findExtreme(
             dailySessions,
             "lowest"
         );
-
-
     const averageTime =
         sessions.length
             ? totalWatchTime /
               sessions.length
             : 0;
-
-
     const mostWatchedPhoto =
         getMostWatchedMedia(
             "photo",
             monthKey
         );
-
-
     const mostWatchedVideo =
         getMostWatchedMedia(
             "video",
             monthKey
         );
-
-
-    /* 1. Highest time */
-
     setText(
         "monthly-highest-time",
         highestTime.key
@@ -5212,8 +2201,6 @@ function renderMonthlyAnalytics(
             )
             : "—"
     );
-
-
     setText(
         "monthly-highest-time-date",
         highestTime.key
@@ -5222,10 +2209,6 @@ function renderMonthlyAnalytics(
             )
             : "No data"
     );
-
-
-    /* 2. Lowest time */
-
     setText(
         "monthly-lowest-time",
         lowestTime.key
@@ -5234,8 +2217,6 @@ function renderMonthlyAnalytics(
             )
             : "—"
     );
-
-
     setText(
         "monthly-lowest-time-date",
         lowestTime.key
@@ -5244,10 +2225,6 @@ function renderMonthlyAnalytics(
             )
             : "No data"
     );
-
-
-    /* 3. Average */
-
     setText(
         "monthly-average-time",
         sessions.length
@@ -5256,18 +2233,12 @@ function renderMonthlyAnalytics(
             )
             : "—"
     );
-
-
-    /* 4. Most watched video */
-
     setText(
         "monthly-most-watched-video",
         mostWatchedVideo.media
             ? mostWatchedVideo.media.name
             : "No data"
     );
-
-
     setText(
         "monthly-most-watched-video-time",
         mostWatchedVideo.media
@@ -5276,18 +2247,12 @@ function renderMonthlyAnalytics(
             )
             : "—"
     );
-
-
-    /* 5. Most watched photo */
-
     setText(
         "monthly-most-watched-photo",
         mostWatchedPhoto.media
             ? mostWatchedPhoto.media.name
             : "No data"
     );
-
-
     setText(
         "monthly-most-watched-photo-time",
         mostWatchedPhoto.media
@@ -5296,26 +2261,16 @@ function renderMonthlyAnalytics(
             )
             : "—"
     );
-
-
-    /* 6. Total sessions */
-
     setText(
         "monthly-total-sessions",
         sessions.length
     );
-
-
-    /* 7. Highest sessions */
-
     setText(
         "monthly-highest-session",
         highestSession.key
             ? `${highestSession.value} sessions`
             : "—"
     );
-
-
     setText(
         "monthly-highest-session-date",
         highestSession.key
@@ -5324,18 +2279,12 @@ function renderMonthlyAnalytics(
             )
             : "No data"
     );
-
-
-    /* 8. Lowest sessions */
-
     setText(
         "monthly-lowest-session",
         lowestSession.key
             ? `${lowestSession.value} sessions`
             : "—"
     );
-
-
     setText(
         "monthly-lowest-session-date",
         lowestSession.key
@@ -5344,48 +2293,26 @@ function renderMonthlyAnalytics(
             )
             : "No data"
     );
-
-
-    /* 9. Total watch time */
-
     setText(
         "monthly-total-watch-time",
         formatTime(
             totalWatchTime
         )
     );
-
-
-    /*
-       Render visual media previews
-       if corresponding containers exist.
-    */
-
     renderMostWatchedMedia(
         "monthly-most-watched-photo-media",
         mostWatchedPhoto.media,
         mostWatchedPhoto.time
     );
-
-
     renderMostWatchedMedia(
         "monthly-most-watched-video-media",
         mostWatchedVideo.media,
         mostWatchedVideo.time
     );
 }
-
-
-/* =========================================================
-   LIFETIME ANALYTICS
-========================================================= */
-
 function renderLifetimeAnalytics() {
-
     const totalSessions =
         analytics.sessions.length;
-
-
     const totalWatchTime =
         analytics.sessions.reduce(
             (sum, session) =>
@@ -5395,31 +2322,21 @@ function renderLifetimeAnalytics() {
                 ),
             0
         );
-
-
     const mostWatchedPhoto =
         getMostWatchedMedia(
             "photo"
         );
-
-
     const mostWatchedVideo =
         getMostWatchedMedia(
             "video"
         );
-
-
     const dailyWatch = {};
     const dailySessions = {};
-
-
     analytics.sessions.forEach(
         session => {
             if (!session.date) {
                 return;
             }
-
-
             dailyWatch[session.date] =
                 normalizeSeconds(
                     dailyWatch[
@@ -5429,8 +2346,6 @@ function renderLifetimeAnalytics() {
                 normalizeSeconds(
                     session.watchTime
                 );
-
-
             dailySessions[session.date] =
                 normalizeSeconds(
                     dailySessions[
@@ -5439,58 +2354,40 @@ function renderLifetimeAnalytics() {
                 ) + 1;
         }
     );
-
-
     const highestSession =
         findExtreme(
             dailySessions,
             "highest"
         );
-
-
     const highestWatch =
         findExtreme(
             dailyWatch,
             "highest"
         );
-
-
-    /* 9. Total lifetime hours */
-
     setText(
         "lifetime-total-hours",
         formatLifetimeHours(
             totalWatchTime
         )
     );
-
-
     setText(
         "lifetime-watch-hours",
         formatLifetimeHours(
             totalWatchTime
         )
     );
-
-
     setText(
         "lifetime-watch-time",
         formatLifetimeHours(
             totalWatchTime
         )
     );
-
-
-    /* 10. Most watched photo */
-
     setText(
         "lifetime-most-watched-photo",
         mostWatchedPhoto.media
             ? mostWatchedPhoto.media.name
             : "No data"
     );
-
-
     setText(
         "lifetime-most-watched-photo-time",
         mostWatchedPhoto.media
@@ -5499,18 +2396,12 @@ function renderLifetimeAnalytics() {
             )
             : "—"
     );
-
-
-    /* 11. Most watched video */
-
     setText(
         "lifetime-most-watched-video",
         mostWatchedVideo.media
             ? mostWatchedVideo.media.name
             : "No data"
     );
-
-
     setText(
         "lifetime-most-watched-video-time",
         mostWatchedVideo.media
@@ -5519,52 +2410,32 @@ function renderLifetimeAnalytics() {
             )
             : "—"
     );
-
-
-    /* 12. Total lifetime sessions */
-
     setText(
         "lifetime-total-sessions",
         totalSessions
     );
-
-
     setText(
         "lifetime-sessions",
         totalSessions
     );
-
-
-    /* 13. Time spent watching */
-
     setText(
         "lifetime-time-spend",
         formatLifetimeHours(
             totalWatchTime
         )
     );
-
-
-    /* Existing HTML ID */
-
     setText(
         "lifetime-watch-time",
         formatLifetimeHours(
             totalWatchTime
         )
     );
-
-
-    /* 14. Highest session */
-
     setText(
         "lifetime-highest-session",
         highestSession.key
             ? `${highestSession.value} sessions`
             : "—"
     );
-
-
     setText(
         "lifetime-highest-session-date",
         highestSession.key
@@ -5573,10 +2444,6 @@ function renderLifetimeAnalytics() {
             )
             : "No data"
     );
-
-
-    /* 15. Most time spent */
-
     setText(
         "lifetime-highest-time",
         highestWatch.key
@@ -5585,8 +2452,6 @@ function renderLifetimeAnalytics() {
             )
             : "—"
     );
-
-
     setText(
         "lifetime-highest-time-date",
         highestWatch.key
@@ -5595,55 +2460,35 @@ function renderLifetimeAnalytics() {
             )
             : "No data"
     );
-
-
     renderMostWatchedMedia(
         "lifetime-most-watched-photo-media",
         mostWatchedPhoto.media,
         mostWatchedPhoto.time
     );
-
-
     renderMostWatchedMedia(
         "lifetime-most-watched-video-media",
         mostWatchedVideo.media,
         mostWatchedVideo.time
     );
 }
-
-
-/* =========================================================
-   LIFETIME HOURS FORMAT
-========================================================= */
-
 function formatLifetimeHours(seconds) {
     seconds =
         normalizeSeconds(
             seconds
         );
-
     const hours =
         Math.floor(
             seconds / 3600
         );
-
     const minutes =
         Math.floor(
             (seconds % 3600) / 60
         );
-
     if (hours > 0) {
         return `${hours}h ${minutes}m`;
     }
-
     return `${minutes}m`;
 }
-
-
-/* =========================================================
-   DASHBOARD MEDIA PREVIEW
-========================================================= */
-
 function renderMostWatchedMedia(
     containerId,
     media,
@@ -5651,39 +2496,26 @@ function renderMostWatchedMedia(
 ) {
     const container =
         $(containerId);
-
     if (!container) {
         return;
     }
-
-
     container.innerHTML =
         "";
-
-
     if (!media) {
         const empty =
             document.createElement(
                 "div"
             );
-
         empty.className =
             "dashboard-empty";
-
         empty.textContent =
             "No data yet";
-
         container.appendChild(
             empty
         );
-
         return;
     }
-
-
     let element;
-
-
     if (
         media.type === "photo"
     ) {
@@ -5691,53 +2523,37 @@ function renderMostWatchedMedia(
             document.createElement(
                 "img"
             );
-
         element.src =
             media.path;
-
         element.alt =
             media.name;
-
         element.className =
             "most-watched-media-image";
-
         element.loading =
             "lazy";
-
     } else {
         element =
             document.createElement(
                 "video"
             );
-
         element.src =
             media.path;
-
         element.className =
             "most-watched-media-video";
-
         element.autoplay =
             true;
-
         element.loop =
             true;
-
         element.muted =
             true;
-
         element.defaultMuted =
             true;
-
         element.playsInline =
             true;
-
         element.controls =
             false;
-
         element.preload =
             "metadata";
-
-
         on(
             element,
             "loadeddata",
@@ -5747,37 +2563,23 @@ function renderMostWatchedMedia(
             }
         );
     }
-
-
     container.appendChild(
         element
     );
-
-
     const time =
         document.createElement(
             "span"
         );
-
     time.className =
         "most-watched-time";
-
     time.textContent =
         formatTime(
             watchTime
         );
-
-
     container.appendChild(
         time
     );
 }
-
-
-/* =========================================================
-   MONTHLY / LIFETIME MEDIA FALLBACKS
-========================================================= */
-
 function findExisting(
     ids
 ) {
@@ -5786,27 +2588,17 @@ function findExisting(
     ) {
         const element =
             $(id);
-
         if (element) {
             return element;
         }
     }
-
     return null;
 }
-
-
-/* =========================================================
-   ANALYTICS DATA REPAIR
-========================================================= */
-
 function repairAnalytics() {
     analytics =
         normalizeAnalytics(
             analytics
         );
-
-
     Object.values(
         analytics.media
     ).forEach(
@@ -5818,8 +2610,6 @@ function repairAnalytics() {
                 stats.totalWatchTime =
                     0;
             }
-
-
             if (
                 typeof stats.totalViews !==
                 "number"
@@ -5827,8 +2617,6 @@ function repairAnalytics() {
                 stats.totalViews =
                     0;
             }
-
-
             if (
                 !stats.monthly ||
                 typeof stats.monthly !==
@@ -5837,8 +2625,6 @@ function repairAnalytics() {
                 stats.monthly =
                     {};
             }
-
-
             if (
                 !stats.monthlyViews ||
                 typeof stats.monthlyViews !==
@@ -5849,8 +2635,6 @@ function repairAnalytics() {
             }
         }
     );
-
-
     analytics.sessions =
         analytics.sessions
             .filter(
@@ -5864,31 +2648,25 @@ function repairAnalytics() {
                     id:
                         session.id ||
                         createSessionId(),
-
                     startTime:
                         session.startTime ||
                         null,
-
                     endTime:
                         session.endTime ||
                         null,
-
                     date:
                         session.date ||
                         null,
-
                     mediaOpened:
                         normalizeSeconds(
                             session.mediaOpened
                         ),
-
                     uniqueMedia:
                         Array.isArray(
                             session.uniqueMedia
                         )
                             ? session.uniqueMedia
                             : [],
-
                     watchTime:
                         normalizeSeconds(
                             session.watchTime
@@ -5896,82 +2674,48 @@ function repairAnalytics() {
                 })
             );
 }
-
-
-/* =========================================================
-   DEBUG / INFORMATION
-========================================================= */
-
 function getArchiveStats() {
     return {
         photos:
             photos.length,
-
         videos:
             videos.length,
-
         songs:
             songs.length,
-
         media:
             mediaLibrary.length,
-
         sessions:
             analytics.sessions.length,
-
         currentScreen:
             state.currentScreen,
-
         currentMedia:
             getMedia(
                 state.currentMediaIndex
             )?.name || null,
-
         selectedSong:
             state.selectedSong?.name || null
     };
 }
-
-
-/* =========================================================
-   EXPOSE DEBUG API
-========================================================= */
-
 window.ArchiveApp = {
     state,
     analytics,
-
     songs,
     photos,
     videos,
     mediaLibrary,
-
     nextMedia,
     previousMedia,
-
     setZoom,
     setVolume,
     toggleMute,
-
     renderDashboard,
-
     saveAnalytics,
-
     getArchiveStats
 };
-
-
-/* =========================================================
-   START APPLICATION
-========================================================= */
-
 function boot() {
     repairAnalytics();
-
     initializeApp();
 }
-
-
 if (
     document.readyState ===
     "loading"
