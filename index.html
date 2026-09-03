@@ -2,11 +2,6 @@
 <html lang="en">
 
 <head>
-
-    <!-- =========================================================
-         DOCUMENT
-    ========================================================== -->
-
     <meta charset="UTF-8">
 
     <meta
@@ -36,11 +31,7 @@
 
     <title>Archive</title>
 
-
-    <!-- =========================================================
-         CONNECTIONS
-    ========================================================== -->
-
+    <!-- Fonts -->
     <link
         rel="preconnect"
         href="https://fonts.googleapis.com"
@@ -53,46 +44,22 @@
     >
 
     <link
-        rel="dns-prefetch"
-        href="//fonts.googleapis.com"
-    >
-
-    <link
-        rel="dns-prefetch"
-        href="//fonts.gstatic.com"
-    >
-
-
-    <!-- =========================================================
-         PREMIUM TYPOGRAPHY
-    ========================================================== -->
-
-    <link
         href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
     >
 
-
-    <!-- =========================================================
-         MAIN STYLESHEET
-    ========================================================== -->
-
+    <!-- Main CSS -->
     <link
         rel="stylesheet"
         href="style.css"
     >
-
 </head>
-
 
 <body>
 
-    <!-- =========================================================
+    <!-- =====================================================
          APP LOADER
-
-         The loader remains visible while the application
-         initializes. app.js removes the "hidden" state.
-    ========================================================== -->
+    ====================================================== -->
 
     <div
         id="app-loader"
@@ -116,28 +83,22 @@
     </div>
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          MAIN APPLICATION
-    ========================================================== -->
+    ====================================================== -->
 
     <main id="app">
 
 
-        <!-- =====================================================
-             SCREEN 1
-             MUSIC SELECTION
-        ====================================================== -->
+        <!-- =================================================
+             SCREEN 1 — MUSIC
+        ================================================== -->
 
         <section
             id="music-screen"
             class="screen music-screen active"
             aria-label="Music selection"
         >
-
-
-            <!-- =================================================
-                 MUSIC HEADER
-            ================================================== -->
 
             <header class="music-header">
 
@@ -163,10 +124,6 @@
 
 
                 <div class="music-header-right">
-
-                    <!-- =========================================
-                         VIEW MODE TOGGLE
-                    ========================================== -->
 
                     <button
                         id="view-toggle"
@@ -246,16 +203,7 @@
             </header>
 
 
-            <!-- =================================================
-                 MUSIC CONTENT
-            ================================================== -->
-
             <div class="music-content">
-
-
-                <!-- =============================================
-                     INTRODUCTION
-                ============================================== -->
 
                 <div class="music-intro">
 
@@ -274,20 +222,7 @@
                 </div>
 
 
-                <!-- =============================================
-                     SONG CONTAINER
-
-                     app.js dynamically creates all 26 cards.
-
-                     Track order:
-                     01 → 26
-
-                     Files:
-                     A1.mp4 → Z26.mp4
-
-                     Thumbnails:
-                     1.png → 26.png
-                ============================================== -->
+                <!-- app.js creates all 26 songs -->
 
                 <div
                     id="song-container"
@@ -297,10 +232,6 @@
 
             </div>
 
-
-            <!-- =================================================
-                 MUSIC FOOTER
-            ================================================== -->
 
             <footer class="music-footer">
 
@@ -330,10 +261,9 @@
 
 
 
-        <!-- =====================================================
-             SCREEN 2
-             FULLSCREEN MEDIA VIEWER
-        ====================================================== -->
+        <!-- =================================================
+             SCREEN 2 — VIEWER
+        ================================================== -->
 
         <section
             id="viewer-screen"
@@ -342,34 +272,20 @@
             aria-hidden="true"
         >
 
-
-            <!-- =================================================
-                 VIEWER HEADER
-            ================================================== -->
-
             <header class="viewer-header">
 
 
-                <!-- =============================================
-                     LEFT CONTROLS
-                ============================================== -->
+                <!-- LEFT -->
 
                 <div class="viewer-header-left">
 
 
-                    <!-- =========================================
-                         VOLUME CONTROL
-                    ========================================== -->
+                    <!-- Volume -->
 
                     <div
                         id="volume-control"
                         class="volume-control"
                     >
-
-
-                        <!-- =====================================
-                             VOLUME BUTTON
-                        ====================================== -->
 
                         <button
                             id="volume-button"
@@ -414,10 +330,6 @@
                         </button>
 
 
-                        <!-- =====================================
-                             VOLUME POPUP
-                        ====================================== -->
-
                         <div
                             id="volume-popup"
                             class="volume-popup"
@@ -442,7 +354,6 @@
 
                             </div>
 
-
                             <input
                                 id="volume-slider"
                                 class="volume-slider"
@@ -459,10 +370,7 @@
                     </div>
 
 
-
-                    <!-- =========================================
-                         DASHBOARD
-                    ========================================== -->
+                    <!-- Dashboard -->
 
                     <button
                         id="open-dashboard"
@@ -476,10 +384,7 @@
                 </div>
 
 
-
-                <!-- =============================================
-                     CURRENT MEDIA NAME
-                ============================================== -->
+                <!-- CURRENT MEDIA NAME -->
 
                 <div
                     class="viewer-media-name"
@@ -493,10 +398,7 @@
                 </div>
 
 
-
-                <!-- =============================================
-                     RIGHT CONTROLS
-                ============================================== -->
+                <!-- RIGHT -->
 
                 <div class="viewer-header-right">
 
@@ -554,10 +456,7 @@
                 aria-label="Current memory"
             >
 
-
-                <!-- =============================================
-                     PREVIOUS
-                ============================================== -->
+                <!-- PREVIOUS -->
 
                 <button
                     id="previous-media"
@@ -573,20 +472,7 @@
                 </button>
 
 
-
-                <!-- =============================================
-                     MEDIA WRAPPER
-
-                     app.js inserts either:
-
-                     <img>
-
-                     OR
-
-                     <video>
-
-                     into this container.
-                ============================================== -->
+                <!-- MEDIA -->
 
                 <div
                     id="media-wrapper"
@@ -595,10 +481,7 @@
                 ></div>
 
 
-
-                <!-- =============================================
-                     NEXT
-                ============================================== -->
+                <!-- NEXT -->
 
                 <button
                     id="next-media"
@@ -624,12 +507,7 @@
             <footer class="viewer-footer">
 
 
-                <!-- =============================================
-                     WATCH TIMER
-
-                     This displays the accumulated watch time
-                     for the currently opened media.
-                ============================================== -->
+                <!-- WATCH TIMER -->
 
                 <div class="watch-timer">
 
@@ -647,15 +525,7 @@
                 </div>
 
 
-
-                <!-- =============================================
-                     MEDIA POSITION
-
-                     Total is updated by app.js.
-
-                     Current archive:
-                     22 photos + 19 videos = 41 items.
-                ============================================== -->
+                <!-- POSITION -->
 
                 <div class="media-progress-container">
 
@@ -669,13 +539,9 @@
                 </div>
 
 
-
-                <!-- =============================================
-                     ZOOM CONTROLS
-                ============================================== -->
+                <!-- ZOOM -->
 
                 <div class="zoom-controls">
-
 
                     <button
                         id="zoom-out"
@@ -685,7 +551,6 @@
                     >
                         −
                     </button>
-
 
                     <input
                         id="zoom-slider"
@@ -697,7 +562,6 @@
                         value="1"
                         aria-label="Zoom level"
                     >
-
 
                     <button
                         id="zoom-in"
@@ -716,10 +580,9 @@
 
 
 
-        <!-- =====================================================
-             SCREEN 3
-             ANALYTICS DASHBOARD
-        ====================================================== -->
+        <!-- =================================================
+             SCREEN 3 — DASHBOARD
+        ================================================== -->
 
         <section
             id="dashboard-screen"
@@ -728,13 +591,7 @@
             aria-hidden="true"
         >
 
-
-            <!-- =================================================
-                 DASHBOARD HEADER
-            ================================================== -->
-
             <header class="dashboard-header">
-
 
                 <div class="dashboard-heading">
 
@@ -751,21 +608,11 @@
 
                 <div class="dashboard-actions">
 
-
-                    <!-- =========================================
-                         MONTH SELECTOR
-                    ========================================== -->
-
                     <select
                         id="month-selector"
                         class="month-selector"
                         aria-label="Select analytics month"
                     ></select>
-
-
-                    <!-- =========================================
-                         BACK TO VIEWER
-                    ========================================== -->
 
                     <button
                         id="back-to-viewer"
@@ -782,10 +629,6 @@
 
 
 
-            <!-- =================================================
-                 DASHBOARD CONTENT
-            ================================================== -->
-
             <div class="dashboard-content">
 
 
@@ -797,7 +640,6 @@
                     class="analytics-section"
                     aria-labelledby="monthly-heading"
                 >
-
 
                     <div class="analytics-section-header">
 
@@ -813,7 +655,6 @@
 
                         </div>
 
-
                         <span
                             id="current-month-label"
                             class="month-label"
@@ -824,17 +665,10 @@
                     </div>
 
 
-
-                    <!-- =============================================
-                         MONTHLY GRID
-                    ============================================== -->
-
                     <div class="analytics-grid">
 
 
-                        <!-- =========================================
-                             01 — HIGHEST TIME SPENT
-                        ========================================== -->
+                        <!-- 01 -->
 
                         <article class="analytics-card large-card">
 
@@ -859,10 +693,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             02 — LOWEST TIME SPENT
-                        ========================================== -->
+                        <!-- 02 -->
 
                         <article class="analytics-card">
 
@@ -887,10 +718,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             03 — AVERAGE WATCHING TIME
-                        ========================================== -->
+                        <!-- 03 -->
 
                         <article class="analytics-card">
 
@@ -912,10 +740,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             04 — MOST WATCHED VIDEO
-                        ========================================== -->
+                        <!-- 04 -->
 
                         <article class="analytics-card media-card">
 
@@ -944,10 +769,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             05 — MOST WATCHED PHOTO
-                        ========================================== -->
+                        <!-- 05 -->
 
                         <article class="analytics-card media-card">
 
@@ -976,10 +798,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             06 — TOTAL SESSIONS
-                        ========================================== -->
+                        <!-- 06 -->
 
                         <article class="analytics-card">
 
@@ -1001,10 +820,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             07 — HIGHEST SESSION
-                        ========================================== -->
+                        <!-- 07 -->
 
                         <article class="analytics-card">
 
@@ -1029,10 +845,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             08 — LOWEST SESSION
-                        ========================================== -->
+                        <!-- 08 -->
 
                         <article class="analytics-card">
 
@@ -1057,10 +870,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             09 — TOTAL WATCH TIME
-                        ========================================== -->
+                        <!-- 09 -->
 
                         <article class="analytics-card highlight-card">
 
@@ -1081,7 +891,6 @@
 
                         </article>
 
-
                     </div>
 
                 </section>
@@ -1097,7 +906,6 @@
                     aria-labelledby="lifetime-heading"
                 >
 
-
                     <div class="analytics-section-header">
 
                         <div>
@@ -1112,7 +920,6 @@
 
                         </div>
 
-
                         <span
                             class="lifetime-badge"
                             aria-label="Lifetime"
@@ -1123,17 +930,10 @@
                     </div>
 
 
-
-                    <!-- =============================================
-                         LIFETIME GRID
-                    ============================================== -->
-
                     <div class="analytics-grid lifetime-grid">
 
 
-                        <!-- =========================================
-                             10 — LIFETIME MOST WATCHED PHOTO
-                        ========================================== -->
+                        <!-- 10 -->
 
                         <article class="analytics-card">
 
@@ -1158,10 +958,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             11 — LIFETIME MOST WATCHED VIDEO
-                        ========================================== -->
+                        <!-- 11 -->
 
                         <article class="analytics-card">
 
@@ -1186,10 +983,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             12 — LIFETIME TOTAL SESSIONS
-                        ========================================== -->
+                        <!-- 12 -->
 
                         <article class="analytics-card">
 
@@ -1211,10 +1005,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             13 — LIFETIME WATCH TIME
-                        ========================================== -->
+                        <!-- 13 -->
 
                         <article class="analytics-card highlight-card">
 
@@ -1236,10 +1027,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             14 — LIFETIME HIGHEST SESSION
-                        ========================================== -->
+                        <!-- 14 -->
 
                         <article class="analytics-card">
 
@@ -1264,10 +1052,7 @@
                         </article>
 
 
-
-                        <!-- =========================================
-                             15 — LIFETIME MOST TIME SPENT
-                        ========================================== -->
+                        <!-- 15 -->
 
                         <article class="analytics-card large-card">
 
@@ -1291,7 +1076,6 @@
 
                         </article>
 
-
                     </div>
 
                 </section>
@@ -1304,20 +1088,9 @@
 
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          BACKGROUND AUDIO
-
-         Song files are MP4.
-
-         app.js assigns:
-             A1.mp4
-             B2.mp4
-             ...
-             Z26.mp4
-
-         Audio element is intentionally hidden by CSS.
-         Playback is controlled completely through JavaScript.
-    ========================================================== -->
+    ====================================================== -->
 
     <audio
         id="background-audio"
@@ -1327,9 +1100,9 @@
 
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          PAGE TRANSITION
-    ========================================================== -->
+    ====================================================== -->
 
     <div
         id="transition-overlay"
@@ -1339,14 +1112,9 @@
 
 
 
-    <!-- =========================================================
+    <!-- =====================================================
          JAVASCRIPT
-
-         firebase.js is loaded separately because the project
-         may use Firebase persistence.
-
-         app.js controls the actual application.
-    ========================================================== -->
+    ====================================================== -->
 
     <script
         type="module"
@@ -1357,7 +1125,6 @@
         type="module"
         src="app.js"
     ></script>
-
 
 </body>
 

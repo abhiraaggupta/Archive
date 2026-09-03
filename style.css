@@ -3990,3 +3990,308 @@ select {
 /* =========================================================
    END OF ARCHIVE STYLESHEET
 ========================================================= */
+
+
+/* =========================================================
+   58. MOBILE VIEWER + DASHBOARD FINAL FIX
+   ========================================================= */
+
+/*
+   The Dashboard button must remain available on phones.
+   The original mobile rule hid it, so these final rules
+   intentionally override that behavior.
+*/
+
+@media (max-width: 700px) {
+
+    .viewer-header {
+        grid-template-columns:
+            auto
+            minmax(0, 1fr)
+            auto;
+
+        column-gap: 8px;
+
+        min-height: 64px;
+
+        padding-left: 9px;
+        padding-right: 9px;
+    }
+
+
+    .viewer-header-left {
+        min-width: 0;
+
+        display: flex;
+        align-items: center;
+
+        gap: 6px;
+    }
+
+
+    .viewer-header-right {
+        min-width: 0;
+    }
+
+
+    .viewer-media-name {
+        display: block;
+
+        width: 100%;
+        max-width: none;
+
+        min-width: 0;
+
+        padding:
+            0
+            4px;
+    }
+
+
+    .viewer-media-name span {
+        overflow: hidden;
+
+        font-size: 8px;
+
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+
+    .dashboard-mini-button {
+        display: inline-flex !important;
+
+        align-items: center;
+        justify-content: center;
+
+        min-width: 0;
+        width: auto;
+
+        min-height: 36px;
+
+        padding:
+            0
+            9px;
+
+        font-size: 8px;
+
+        letter-spacing: 0.06em;
+
+        white-space: nowrap;
+
+        flex-shrink: 0;
+    }
+
+
+    .volume-control {
+        flex-shrink: 0;
+    }
+
+
+    .volume-button,
+    .viewer-header-right .icon-button {
+        width: 36px;
+        height: 36px;
+
+        flex-shrink: 0;
+    }
+
+
+    .media-stage {
+        padding-top: 58px;
+        padding-bottom: 58px;
+    }
+
+
+    .viewer-footer {
+        min-height: 62px;
+    }
+
+}
+
+
+/* =========================================================
+   59. SMALL PHONE VIEWER
+========================================================= */
+
+@media (max-width: 480px) {
+
+    .viewer-header {
+        column-gap: 5px;
+
+        padding-left: 7px;
+        padding-right: 7px;
+    }
+
+
+    .viewer-header-left {
+        gap: 4px;
+    }
+
+
+    .dashboard-mini-button {
+        min-height: 34px;
+
+        padding:
+            0
+            7px;
+
+        font-size: 7px;
+
+        letter-spacing: 0.045em;
+    }
+
+
+    .volume-button,
+    .viewer-header-right .icon-button {
+        width: 34px;
+        height: 34px;
+    }
+
+
+    .viewer-media-name span {
+        font-size: 7px;
+        letter-spacing: 0.055em;
+    }
+
+
+    .media-stage {
+        padding-left: 38px;
+        padding-right: 38px;
+    }
+
+
+    .previous-media {
+        left: 0;
+    }
+
+
+    .next-media {
+        right: 0;
+    }
+
+}
+
+
+/* =========================================================
+   60. VERY SMALL PHONE
+========================================================= */
+
+@media (max-width: 360px) {
+
+    .viewer-header {
+        column-gap: 3px;
+
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+
+
+    .dashboard-mini-button {
+        min-height: 32px;
+
+        padding:
+            0
+            6px;
+
+        font-size: 6.5px;
+    }
+
+
+    .volume-button,
+    .viewer-header-right .icon-button {
+        width: 32px;
+        height: 32px;
+    }
+
+
+    .viewer-media-name span {
+        font-size: 6.5px;
+    }
+
+
+    .media-stage {
+        padding-left: 34px;
+        padding-right: 34px;
+    }
+
+}
+
+
+/* =========================================================
+   61. TOUCH DEVICES — KEEP CONTROLS USABLE
+========================================================= */
+
+@media (hover: none) {
+
+    .dashboard-mini-button {
+        opacity: 1;
+        visibility: visible;
+
+        pointer-events: auto;
+    }
+
+
+    .volume-popup {
+        z-index: 200;
+    }
+
+
+    .media-navigation {
+        touch-action: manipulation;
+    }
+
+
+    .zoom-button,
+    .icon-button,
+    .dashboard-mini-button,
+    .back-button,
+    .skip-button,
+    .view-toggle,
+    .song-preview-button {
+        touch-action: manipulation;
+    }
+
+}
+
+
+/* =========================================================
+   62. VIEWER HEADER SAFE AREA
+========================================================= */
+
+@supports (padding-top: env(safe-area-inset-top)) {
+
+    .viewer-header {
+        padding-top:
+            env(safe-area-inset-top);
+    }
+
+}
+
+
+/* =========================================================
+   63. FINAL DASHBOARD VISIBILITY SAFETY
+========================================================= */
+
+#open-dashboard.dashboard-mini-button {
+    display: inline-flex;
+}
+
+
+.viewer-screen.active #open-dashboard.dashboard-mini-button {
+    pointer-events: auto;
+}
+
+
+@media (max-width: 700px) {
+
+    #open-dashboard.dashboard-mini-button {
+        display: inline-flex !important;
+    }
+
+}
+
+
+/* =========================================================
+   END — FINAL MOBILE FIXES
+========================================================= */
