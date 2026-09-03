@@ -11,6 +11,7 @@ const CONFIG = Object.freeze({
         4, 
         11,
         12,
+        17,
         13,
         16,
     ]),
