@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <!-- =========================================================
+         DOCUMENT
+    ========================================================== -->
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#030303"
+    >
+
+    <meta
+        name="color-scheme"
+        content="dark light"
+    >
+
+    <meta
+        name="description"
+        content="A private personal memory archive with music, photos, videos and watch analytics."
+    >
+
+    <meta
+        name="robots"
+        content="noindex, nofollow, noarchive"
+    >
+
+    <title>Archive</title>
+
+
+    <!-- =========================================================
+         CONNECTIONS
+    ========================================================== -->
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        rel="dns-prefetch"
+        href="//fonts.googleapis.com"
+    >
+
+    <link
+        rel="dns-prefetch"
+        href="//fonts.gstatic.com"
+    >
+
+
+    <!-- =========================================================
+         PREMIUM TYPOGRAPHY
+    ========================================================== -->
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <!-- =========================================================
+         MAIN STYLESHEET
+    ========================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <!-- =========================================================
+         APP LOADER
+
+         The loader remains visible while the application
+         initializes. app.js removes the "hidden" state.
+    ========================================================== -->
+
+    <div
+        id="app-loader"
+        class="app-loader"
+        aria-label="Loading Archive"
+    >
+
+        <div class="loader-content">
+
+            <div
+                class="loader-mark"
+                aria-hidden="true"
+            ></div>
+
+            <p>
+                Loading archive
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         MAIN APPLICATION
+    ========================================================== -->
+
+    <main id="app">
+
+
+        <!-- =====================================================
+             SCREEN 1
+             MUSIC SELECTION
+        ====================================================== -->
+
+        <section
+            id="music-screen"
+            class="screen music-screen active"
+            aria-label="Music selection"
+        >
+
+
+            <!-- =================================================
+                 MUSIC HEADER
+            ================================================== -->
+
+            <header class="music-header">
+
+                <div class="music-header-left">
+
+                    <div
+                        class="brand"
+                        aria-label="Archive"
+                    >
+
+                        <span
+                            class="brand-dot"
+                            aria-hidden="true"
+                        ></span>
+
+                        <span class="brand-name">
+                            Archive
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="music-header-right">
+
+                    <!-- =========================================
+                         VIEW MODE TOGGLE
+                    ========================================== -->
+
+                    <button
+                        id="view-toggle"
+                        class="view-toggle"
+                        type="button"
+                        aria-label="Change playlist view"
+                        aria-pressed="false"
+                    >
+
+                        <span class="view-label">
+                            View
+                        </span>
+
+                        <span
+                            id="view-mode"
+                            class="view-mode"
+                        >
+                            Grid
+                        </span>
+
+                        <span
+                            class="view-icon"
+                            aria-hidden="true"
+                        >
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                width="18"
+                                height="18"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.6"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+
+                                <rect
+                                    x="4"
+                                    y="4"
+                                    width="6"
+                                    height="6"
+                                    rx="1"
+                                ></rect>
+
+                                <rect
+                                    x="14"
+                                    y="4"
+                                    width="6"
+                                    height="6"
+                                    rx="1"
+                                ></rect>
+
+                                <rect
+                                    x="4"
+                                    y="14"
+                                    width="6"
+                                    height="6"
+                                    rx="1"
+                                ></rect>
+
+                                <rect
+                                    x="14"
+                                    y="14"
+                                    width="6"
+                                    height="6"
+                                    rx="1"
+                                ></rect>
+
+                            </svg>
+
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- =================================================
+                 MUSIC CONTENT
+            ================================================== -->
+
+            <div class="music-content">
+
+
+                <!-- =============================================
+                     INTRODUCTION
+                ============================================== -->
+
+                <div class="music-intro">
+
+                    <p class="section-eyebrow">
+                        SELECT A TRACK
+                    </p>
+
+                    <h1>
+                        Start somewhere.
+                    </h1>
+
+                    <p class="music-description">
+                        Choose a song before entering the archive.
+                    </p>
+
+                </div>
+
+
+                <!-- =============================================
+                     SONG CONTAINER
+
+                     app.js dynamically creates all 26 cards.
+
+                     Track order:
+                     01 → 26
+
+                     Files:
+                     A1.mp4 → Z26.mp4
+
+                     Thumbnails:
+                     1.png → 26.png
+                ============================================== -->
+
+                <div
+                    id="song-container"
+                    class="song-container grid-view"
+                    aria-label="Music playlist"
+                ></div>
+
+            </div>
+
+
+            <!-- =================================================
+                 MUSIC FOOTER
+            ================================================== -->
+
+            <footer class="music-footer">
+
+                <button
+                    id="skip-button"
+                    class="skip-button"
+                    type="button"
+                    aria-label="Skip music selection and enter archive"
+                >
+
+                    <span>
+                        Skip
+                    </span>
+
+                    <span
+                        class="skip-arrow"
+                        aria-hidden="true"
+                    >
+                        →
+                    </span>
+
+                </button>
+
+            </footer>
+
+        </section>
+
+
+
+        <!-- =====================================================
+             SCREEN 2
+             FULLSCREEN MEDIA VIEWER
+        ====================================================== -->
+
+        <section
+            id="viewer-screen"
+            class="screen viewer-screen"
+            aria-label="Memory viewer"
+            aria-hidden="true"
+        >
+
+
+            <!-- =================================================
+                 VIEWER HEADER
+            ================================================== -->
+
+            <header class="viewer-header">
+
+
+                <!-- =============================================
+                     LEFT CONTROLS
+                ============================================== -->
+
+                <div class="viewer-header-left">
+
+
+                    <!-- =========================================
+                         VOLUME CONTROL
+                    ========================================== -->
+
+                    <div
+                        id="volume-control"
+                        class="volume-control"
+                    >
+
+
+                        <!-- =====================================
+                             VOLUME BUTTON
+                        ====================================== -->
+
+                        <button
+                            id="volume-button"
+                            class="icon-button volume-button"
+                            type="button"
+                            aria-label="Volume control"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                        >
+
+                            <svg
+                                id="volume-icon"
+                                viewBox="0 0 24 24"
+                                width="20"
+                                height="20"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                aria-hidden="true"
+                            >
+
+                                <path
+                                    d="M4 10v4h4l5 4V6L8 10H4z"
+                                    fill="currentColor"
+                                    stroke="none"
+                                ></path>
+
+                                <path
+                                    id="volume-wave"
+                                    d="M16 9a4 4 0 0 1 0 6"
+                                ></path>
+
+                                <path
+                                    id="volume-wave-2"
+                                    d="M19 6a8 8 0 0 1 0 12"
+                                ></path>
+
+                            </svg>
+
+                        </button>
+
+
+                        <!-- =====================================
+                             VOLUME POPUP
+                        ====================================== -->
+
+                        <div
+                            id="volume-popup"
+                            class="volume-popup"
+                            role="dialog"
+                            aria-label="Volume settings"
+                        >
+
+                            <div class="volume-popup-top">
+
+                                <span class="volume-title">
+                                    Volume
+                                </span>
+
+                                <button
+                                    id="mute-button"
+                                    class="mute-button"
+                                    type="button"
+                                    aria-label="Mute audio"
+                                >
+                                    Mute
+                                </button>
+
+                            </div>
+
+
+                            <input
+                                id="volume-slider"
+                                class="volume-slider"
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value="0.8"
+                                aria-label="Volume"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- =========================================
+                         DASHBOARD
+                    ========================================== -->
+
+                    <button
+                        id="open-dashboard"
+                        class="dashboard-mini-button"
+                        type="button"
+                        aria-label="Open analytics dashboard"
+                    >
+                        Dashboard
+                    </button>
+
+                </div>
+
+
+
+                <!-- =============================================
+                     CURRENT MEDIA NAME
+                ============================================== -->
+
+                <div
+                    class="viewer-media-name"
+                    aria-live="polite"
+                >
+
+                    <span id="current-media-name">
+                        Loading
+                    </span>
+
+                </div>
+
+
+
+                <!-- =============================================
+                     RIGHT CONTROLS
+                ============================================== -->
+
+                <div class="viewer-header-right">
+
+                    <button
+                        id="fullscreen-button"
+                        class="icon-button"
+                        type="button"
+                        aria-label="Toggle fullscreen"
+                    >
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+
+                            <path
+                                d="M8 3H5a2 2 0 0 0-2 2v3"
+                            ></path>
+
+                            <path
+                                d="M16 3h3a2 2 0 0 1 2 2v3"
+                            ></path>
+
+                            <path
+                                d="M8 21H5a2 2 0 0 1-2-2v-3"
+                            ></path>
+
+                            <path
+                                d="M16 21h3a2 2 0 0 0 2-2v-3"
+                            ></path>
+
+                        </svg>
+
+                    </button>
+
+                </div>
+
+            </header>
+
+
+
+            <!-- =================================================
+                 MEDIA STAGE
+            ================================================== -->
+
+            <div
+                class="media-stage"
+                aria-label="Current memory"
+            >
+
+
+                <!-- =============================================
+                     PREVIOUS
+                ============================================== -->
+
+                <button
+                    id="previous-media"
+                    class="media-navigation previous-media"
+                    type="button"
+                    aria-label="Previous memory"
+                >
+
+                    <span aria-hidden="true">
+                        ‹
+                    </span>
+
+                </button>
+
+
+
+                <!-- =============================================
+                     MEDIA WRAPPER
+
+                     app.js inserts either:
+
+                     <img>
+
+                     OR
+
+                     <video>
+
+                     into this container.
+                ============================================== -->
+
+                <div
+                    id="media-wrapper"
+                    class="media-wrapper"
+                    aria-live="polite"
+                ></div>
+
+
+
+                <!-- =============================================
+                     NEXT
+                ============================================== -->
+
+                <button
+                    id="next-media"
+                    class="media-navigation next-media"
+                    type="button"
+                    aria-label="Next memory"
+                >
+
+                    <span aria-hidden="true">
+                        ›
+                    </span>
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =================================================
+                 VIEWER FOOTER
+            ================================================== -->
+
+            <footer class="viewer-footer">
+
+
+                <!-- =============================================
+                     WATCH TIMER
+
+                     This displays the accumulated watch time
+                     for the currently opened media.
+                ============================================== -->
+
+                <div class="watch-timer">
+
+                    <span class="timer-label">
+                        Watch time
+                    </span>
+
+                    <span
+                        id="media-watch-time"
+                        class="timer-value"
+                    >
+                        00:00:00
+                    </span>
+
+                </div>
+
+
+
+                <!-- =============================================
+                     MEDIA POSITION
+
+                     Total is updated by app.js.
+
+                     Current archive:
+                     22 photos + 19 videos = 41 items.
+                ============================================== -->
+
+                <div class="media-progress-container">
+
+                    <span
+                        id="media-position"
+                        class="media-position"
+                    >
+                        1 / 41
+                    </span>
+
+                </div>
+
+
+
+                <!-- =============================================
+                     ZOOM CONTROLS
+                ============================================== -->
+
+                <div class="zoom-controls">
+
+
+                    <button
+                        id="zoom-out"
+                        class="zoom-button"
+                        type="button"
+                        aria-label="Zoom out"
+                    >
+                        −
+                    </button>
+
+
+                    <input
+                        id="zoom-slider"
+                        class="zoom-slider"
+                        type="range"
+                        min="1"
+                        max="3"
+                        step="0.05"
+                        value="1"
+                        aria-label="Zoom level"
+                    >
+
+
+                    <button
+                        id="zoom-in"
+                        class="zoom-button"
+                        type="button"
+                        aria-label="Zoom in"
+                    >
+                        +
+                    </button>
+
+                </div>
+
+            </footer>
+
+        </section>
+
+
+
+        <!-- =====================================================
+             SCREEN 3
+             ANALYTICS DASHBOARD
+        ====================================================== -->
+
+        <section
+            id="dashboard-screen"
+            class="screen dashboard-screen"
+            aria-label="Analytics dashboard"
+            aria-hidden="true"
+        >
+
+
+            <!-- =================================================
+                 DASHBOARD HEADER
+            ================================================== -->
+
+            <header class="dashboard-header">
+
+
+                <div class="dashboard-heading">
+
+                    <p class="section-eyebrow">
+                        YOUR ACTIVITY
+                    </p>
+
+                    <h1>
+                        Dashboard
+                    </h1>
+
+                </div>
+
+
+                <div class="dashboard-actions">
+
+
+                    <!-- =========================================
+                         MONTH SELECTOR
+                    ========================================== -->
+
+                    <select
+                        id="month-selector"
+                        class="month-selector"
+                        aria-label="Select analytics month"
+                    ></select>
+
+
+                    <!-- =========================================
+                         BACK TO VIEWER
+                    ========================================== -->
+
+                    <button
+                        id="back-to-viewer"
+                        class="back-button"
+                        type="button"
+                        aria-label="Return to viewer"
+                    >
+                        ← Back
+                    </button>
+
+                </div>
+
+            </header>
+
+
+
+            <!-- =================================================
+                 DASHBOARD CONTENT
+            ================================================== -->
+
+            <div class="dashboard-content">
+
+
+                <!-- =================================================
+                     MONTHLY ANALYTICS
+                ================================================== -->
+
+                <section
+                    class="analytics-section"
+                    aria-labelledby="monthly-heading"
+                >
+
+
+                    <div class="analytics-section-header">
+
+                        <div>
+
+                            <p class="section-eyebrow">
+                                MONTHLY ANALYTICS
+                            </p>
+
+                            <h2 id="monthly-heading">
+                                This month
+                            </h2>
+
+                        </div>
+
+
+                        <span
+                            id="current-month-label"
+                            class="month-label"
+                        >
+                            Current month
+                        </span>
+
+                    </div>
+
+
+
+                    <!-- =============================================
+                         MONTHLY GRID
+                    ============================================== -->
+
+                    <div class="analytics-grid">
+
+
+                        <!-- =========================================
+                             01 — HIGHEST TIME SPENT
+                        ========================================== -->
+
+                        <article class="analytics-card large-card">
+
+                            <span class="card-label">
+                                Highest time spent
+                            </span>
+
+                            <strong
+                                id="monthly-highest-time"
+                                class="card-value"
+                            >
+                                —
+                            </strong>
+
+                            <span
+                                id="monthly-highest-time-date"
+                                class="card-detail"
+                            >
+                                —
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             02 — LOWEST TIME SPENT
+                        ========================================== -->
+
+                        <article class="analytics-card">
+
+                            <span class="card-label">
+                                Lowest time spent
+                            </span>
+
+                            <strong
+                                id="monthly-lowest-time"
+                                class="card-value"
+                            >
+                                —
+                            </strong>
+
+                            <span
+                                id="monthly-lowest-time-date"
+                                class="card-detail"
+                            >
+                                —
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             03 — AVERAGE WATCHING TIME
+                        ========================================== -->
+
+                        <article class="analytics-card">
+
+                            <span class="card-label">
+                                Average watching time
+                            </span>
+
+                            <strong
+                                id="monthly-average-time"
+                                class="card-value"
+                            >
+                                —
+                            </strong>
+
+                            <span class="card-detail">
+                                Per session
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             04 — MOST WATCHED VIDEO
+                        ========================================== -->
+
+                        <article class="analytics-card media-card">
+
+                            <span class="card-label">
+                                Most watched video
+                            </span>
+
+                            <div class="card-media-info">
+
+                                <strong
+                                    id="monthly-most-watched-video"
+                                    class="card-value small-value"
+                                >
+                                    —
+                                </strong>
+
+                                <span
+                                    id="monthly-most-watched-video-time"
+                                    class="card-detail"
+                                >
+                                    —
+                                </span>
+
+                            </div>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             05 — MOST WATCHED PHOTO
+                        ========================================== -->
+
+                        <article class="analytics-card media-card">
+
+                            <span class="card-label">
+                                Most watched photo
+                            </span>
+
+                            <div class="card-media-info">
+
+                                <strong
+                                    id="monthly-most-watched-photo"
+                                    class="card-value small-value"
+                                >
+                                    —
+                                </strong>
+
+                                <span
+                                    id="monthly-most-watched-photo-time"
+                                    class="card-detail"
+                                >
+                                    —
+                                </span>
+
+                            </div>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             06 — TOTAL SESSIONS
+                        ========================================== -->
+
+                        <article class="analytics-card">
+
+                            <span class="card-label">
+                                Total sessions
+                            </span>
+
+                            <strong
+                                id="monthly-total-sessions"
+                                class="card-value"
+                            >
+                                0
+                            </strong>
+
+                            <span class="card-detail">
+                                This month
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             07 — HIGHEST SESSION
+                        ========================================== -->
+
+                        <article class="analytics-card">
+
+                            <span class="card-label">
+                                Highest session
+                            </span>
+
+                            <strong
+                                id="monthly-highest-session"
+                                class="card-value"
+                            >
+                                —
+                            </strong>
+
+                            <span
+                                id="monthly-highest-session-date"
+                                class="card-detail"
+                            >
+                                —
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             08 — LOWEST SESSION
+                        ========================================== -->
+
+                        <article class="analytics-card">
+
+                            <span class="card-label">
+                                Lowest session
+                            </span>
+
+                            <strong
+                                id="monthly-lowest-session"
+                                class="card-value"
+                            >
+                                —
+                            </strong>
+
+                            <span
+                                id="monthly-lowest-session-date"
+                                class="card-detail"
+                            >
+                                —
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             09 — TOTAL WATCH TIME
+                        ========================================== -->
+
+                        <article class="analytics-card highlight-card">
+
+                            <span class="card-label">
+                                Total watch time
+                            </span>
+
+                            <strong
+                                id="monthly-total-watch-time"
+                                class="card-value"
+                            >
+                                0h
+                            </strong>
+
+                            <span class="card-detail">
+                                This month
+                            </span>
+
+                        </article>
+
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- =================================================
+                     LIFETIME ANALYTICS
+                ================================================== -->
+
+                <section
+                    class="analytics-section lifetime-section"
+                    aria-labelledby="lifetime-heading"
+                >
+
+
+                    <div class="analytics-section-header">
+
+                        <div>
+
+                            <p class="section-eyebrow">
+                                ALL TIME
+                            </p>
+
+                            <h2 id="lifetime-heading">
+                                Lifetime
+                            </h2>
+
+                        </div>
+
+
+                        <span
+                            class="lifetime-badge"
+                            aria-label="Lifetime"
+                        >
+                            ∞
+                        </span>
+
+                    </div>
+
+
+
+                    <!-- =============================================
+                         LIFETIME GRID
+                    ============================================== -->
+
+                    <div class="analytics-grid lifetime-grid">
+
+
+                        <!-- =========================================
+                             10 — LIFETIME MOST WATCHED PHOTO
+                        ========================================== -->
+
+                        <article class="analytics-card">
+
+                            <span class="card-label">
+                                Most watched photo
+                            </span>
+
+                            <strong
+                                id="lifetime-most-watched-photo"
+                                class="card-value small-value"
+                            >
+                                —
+                            </strong>
+
+                            <span
+                                id="lifetime-most-watched-photo-time"
+                                class="card-detail"
+                            >
+                                —
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             11 — LIFETIME MOST WATCHED VIDEO
+                        ========================================== -->
+
+                        <article class="analytics-card">
+
+                            <span class="card-label">
+                                Most watched video
+                            </span>
+
+                            <strong
+                                id="lifetime-most-watched-video"
+                                class="card-value small-value"
+                            >
+                                —
+                            </strong>
+
+                            <span
+                                id="lifetime-most-watched-video-time"
+                                class="card-detail"
+                            >
+                                —
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             12 — LIFETIME TOTAL SESSIONS
+                        ========================================== -->
+
+                        <article class="analytics-card">
+
+                            <span class="card-label">
+                                Total sessions
+                            </span>
+
+                            <strong
+                                id="lifetime-total-sessions"
+                                class="card-value"
+                            >
+                                0
+                            </strong>
+
+                            <span class="card-detail">
+                                All time
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             13 — LIFETIME WATCH TIME
+                        ========================================== -->
+
+                        <article class="analytics-card highlight-card">
+
+                            <span class="card-label">
+                                Time spent watching
+                            </span>
+
+                            <strong
+                                id="lifetime-watch-time"
+                                class="card-value"
+                            >
+                                0h
+                            </strong>
+
+                            <span class="card-detail">
+                                Lifetime
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             14 — LIFETIME HIGHEST SESSION
+                        ========================================== -->
+
+                        <article class="analytics-card">
+
+                            <span class="card-label">
+                                Highest session
+                            </span>
+
+                            <strong
+                                id="lifetime-highest-session"
+                                class="card-value"
+                            >
+                                —
+                            </strong>
+
+                            <span
+                                id="lifetime-highest-session-date"
+                                class="card-detail"
+                            >
+                                —
+                            </span>
+
+                        </article>
+
+
+
+                        <!-- =========================================
+                             15 — LIFETIME MOST TIME SPENT
+                        ========================================== -->
+
+                        <article class="analytics-card large-card">
+
+                            <span class="card-label">
+                                Most time spent
+                            </span>
+
+                            <strong
+                                id="lifetime-highest-time"
+                                class="card-value"
+                            >
+                                —
+                            </strong>
+
+                            <span
+                                id="lifetime-highest-time-date"
+                                class="card-detail"
+                            >
+                                —
+                            </span>
+
+                        </article>
+
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- =========================================================
+         BACKGROUND AUDIO
+
+         Song files are MP4.
+
+         app.js assigns:
+             A1.mp4
+             B2.mp4
+             ...
+             Z26.mp4
+
+         Audio element is intentionally hidden by CSS.
+         Playback is controlled completely through JavaScript.
+    ========================================================== -->
+
+    <audio
+        id="background-audio"
+        preload="auto"
+        playsinline
+    ></audio>
+
+
+
+    <!-- =========================================================
+         PAGE TRANSITION
+    ========================================================== -->
+
+    <div
+        id="transition-overlay"
+        class="transition-overlay"
+        aria-hidden="true"
+    ></div>
+
+
+
+    <!-- =========================================================
+         JAVASCRIPT
+
+         firebase.js is loaded separately because the project
+         may use Firebase persistence.
+
+         app.js controls the actual application.
+    ========================================================== -->
+
+    <script
+        type="module"
+        src="firebase.js"
+    ></script>
+
+    <script
+        type="module"
+        src="app.js"
+    ></script>
+
+
+</body>
+
+</html>
