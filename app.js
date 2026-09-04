@@ -46,7 +46,7 @@ const SONG_NAMES = [
     "Teri narron ke sadke",
     "Teri bin",
     "Aarzu",
-    "Teri narzon ke karan",
+    "Aahiq tera",
     "Dil diya gallan",
     "Gallan Goodiyan",
     "Maula maula re",
@@ -389,6 +389,7 @@ const state = {
     sessionStarted: false,
     mediaStartTimestamp: null,
     mediaElapsedSeconds: 0,
+    mediaCommittedSeconds: 0,
     timerInterval: null,
     analyticsSaveTimer: null,
     previewAudio: null,
@@ -1663,6 +1664,26 @@ function updateViewerUI() {
 }
 function startMediaTimer() {
     stopMediaTimer();
+    state.mediaStartTimestamp = Date.now();
+    state.mediaElapsedSeconds = 0;
+    state.mediaCommittedSeconds = 0;
+    updateViewerTimer();
+
+    state.timerInterval = window.setInterval(() => {
+        if (!state.pageVisible || !state.sessionStarted) return;
+
+        state.mediaElapsedSeconds++;
+        updateViewerTimer();
+
+        if (
+            state.mediaElapsedSeconds -
+            state.mediaCommittedSeconds >= 5
+        ) {
+            commitCurrentMediaTime(false);
+        }
+    }, CONFIG.timerInterval);
+} {
+    stopMediaTimer();
     state.mediaStartTimestamp =
         Date.now();
     state.mediaElapsedSeconds =
@@ -1787,9 +1808,39 @@ function registerMediaOpen(media) {
     }
     saveAnalytics();
 }
-function commitCurrentMediaTime(
+function commitCurrentMediaTime(save = true) {
+    if (!state.currentSession) return;
+
+    const totalSeconds = normalizeSeconds(state.mediaElapsedSeconds);
+    const committedSeconds = normalizeSeconds(state.mediaCommittedSeconds);
+    const seconds = Math.max(0, totalSeconds - committedSeconds);
+
+    if (seconds <= 0) return;
+
+    const media = getMedia(state.currentMediaIndex);
+    if (!media) return;
+
+    const stats = ensureMediaAnalytics(media);
+    const monthKey = getMonthKey();
+
+    stats.totalWatchTime += seconds;
+    stats.monthly[monthKey] =
+        normalizeSeconds(stats.monthly[monthKey]) + seconds;
+
+    state.currentSession.watchTime += seconds;
+
+    state.currentSession.mediaWatchTime[media.id] =
+        normalizeSeconds(
+            state.currentSession.mediaWatchTime[media.id]
+        ) + seconds;
+
+    state.mediaCommittedSeconds = totalSeconds;
+    state.mediaStartTimestamp = Date.now();
+
+    if (save) saveAnalytics();
+}
     save = true
-) {
+ {
     if (
         !state.currentSession
     ) {
@@ -1855,6 +1906,7 @@ function commitCurrentMediaTime(
      * Sirf committed portion ko track karna hai.
      */
     state.mediaElapsedSeconds = 0;
+    state.mediaCommittedSeconds = 0;
 
     if (save) {
         saveAnalytics();
