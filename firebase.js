@@ -5,9 +5,12 @@
 
 "use strict";
 
-/* =========================================================
-   FIREBASE SDK
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| FIREBASE SDK
+|--------------------------------------------------------------------------
+| Using Firebase's official modular browser SDK.
+*/
 
 import {
     initializeApp
@@ -27,10 +30,25 @@ import {
    FIREBASE CONFIG
    ========================================================= */
 
+/*
+ * Firebase Console:
+ *
+ * Project settings
+ *      ↓
+ * Your apps
+ *      ↓
+ * Web app
+ *      ↓
+ * Firebase SDK snippet
+ *      ↓
+ * Config
+ *
+ * Yahan apni ORIGINAL Firebase config paste karo.
+ */
+
 const firebaseConfig = {
 
-    apiKey:
-        "AIzaSyBfFPH9g4SPwxyvt81MmZNw-2WTQ72pZ0k",
+    apiKey: "AIzaSyBfFPH9g4SPwxyvt81MmZNw-2WTQ72pZ0k",
 
     authDomain:
         "archive-2912.firebaseapp.com",
@@ -61,7 +79,18 @@ let db = null;
 let firebaseReady = false;
 
 
+/*
+|--------------------------------------------------------------------------
+| Initialize Firebase
+|--------------------------------------------------------------------------
+*/
+
 try {
+
+    /*
+     * Don't initialize Firebase if the config hasn't
+     * been filled in yet.
+     */
 
     const configIsValid =
         firebaseConfig.apiKey &&
@@ -127,12 +156,17 @@ const FIREBASE_DOCUMENT =
    INTERNAL HELPERS
    ========================================================= */
 
+/*
+|--------------------------------------------------------------------------
+| Get Firestore document reference
+|--------------------------------------------------------------------------
+*/
+
 function getAnalyticsRef() {
 
     if (!db) {
         return null;
     }
-
 
     return doc(
         db,
@@ -142,6 +176,15 @@ function getAnalyticsRef() {
 
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| Safe clone
+|--------------------------------------------------------------------------
+|
+| Firestore doesn't need undefined values.
+| This also prevents accidental mutation of local objects.
+*/
 
 function cleanObject(value) {
 
@@ -192,7 +235,6 @@ function cleanObject(value) {
             }
         );
 
-
         return output;
 
     }
@@ -203,9 +245,11 @@ function cleanObject(value) {
 }
 
 
-/* =========================================================
-   NORMALIZE ANALYTICS STRUCTURE
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| Normalize analytics structure
+|--------------------------------------------------------------------------
+*/
 
 function normalizeAnalytics(data) {
 
@@ -220,11 +264,14 @@ function normalizeAnalytics(data) {
                 source.version || 1
             ),
 
+
         createdAt:
             source.createdAt || null,
 
+
         updatedAt:
             source.updatedAt || null,
+
 
         sessions:
             Array.isArray(
@@ -233,10 +280,13 @@ function normalizeAnalytics(data) {
                 ? source.sessions
                 : [],
 
+
         media:
             source.media &&
             typeof source.media === "object"
+
                 ? source.media
+
                 : {}
 
     };
@@ -248,10 +298,29 @@ function normalizeAnalytics(data) {
    LOAD ANALYTICS
    ========================================================= */
 
+/*
+|--------------------------------------------------------------------------
+| loadFirebaseAnalytics
+|--------------------------------------------------------------------------
+|
+| Returns:
+|
+|     analytics object
+|
+| or
+|
+|     null
+|
+| when Firebase isn't configured / unavailable.
+|--------------------------------------------------------------------------
+*/
+
 async function loadFirebaseAnalytics() {
 
     if (!firebaseReady || !db) {
+
         return null;
+
     }
 
 
@@ -262,7 +331,9 @@ async function loadFirebaseAnalytics() {
 
 
         if (!reference) {
+
             return null;
+
         }
 
 
@@ -310,6 +381,21 @@ async function loadFirebaseAnalytics() {
    SAVE ANALYTICS
    ========================================================= */
 
+/*
+|--------------------------------------------------------------------------
+| saveFirebaseAnalytics
+|--------------------------------------------------------------------------
+|
+| Saves the complete analytics object.
+|
+| We intentionally use setDoc() rather than trying to
+| update individual session fields.
+|
+| This keeps the Firebase structure synchronized with the
+| local analytics structure used by app.js.
+|--------------------------------------------------------------------------
+*/
+
 async function saveFirebaseAnalytics(
     analytics
 ) {
@@ -332,7 +418,9 @@ async function saveFirebaseAnalytics(
 
 
         if (!reference) {
+
             return false;
+
         }
 
 
@@ -391,6 +479,19 @@ async function saveFirebaseAnalytics(
    MERGE ANALYTICS
    ========================================================= */
 
+/*
+|--------------------------------------------------------------------------
+| mergeAnalytics
+|--------------------------------------------------------------------------
+|
+| Used when Firebase already contains data and local data
+| also exists.
+|
+| Sessions are identified using session.id when available.
+| Media statistics are merged by media ID.
+|--------------------------------------------------------------------------
+*/
+
 function mergeAnalytics(
     firebaseData,
     localData
@@ -408,9 +509,11 @@ function mergeAnalytics(
         );
 
 
-    /* -------------------------------------------------------
-       Sessions
-       ------------------------------------------------------- */
+    /*
+     * ------------------------------------------------------
+     * Sessions
+     * ------------------------------------------------------
+     */
 
     const sessionMap =
         new Map();
@@ -454,6 +557,10 @@ function mergeAnalytics(
     );
 
 
+    /*
+     * Sessions without IDs are preserved.
+     */
+
     const sessionsWithoutIds = [
 
         ...firebaseAnalytics.sessions.filter(
@@ -481,6 +588,10 @@ function mergeAnalytics(
 
     ];
 
+
+    /*
+     * Sort chronologically.
+     */
 
     mergedSessions.sort(
         (
@@ -510,9 +621,11 @@ function mergeAnalytics(
     );
 
 
-    /* -------------------------------------------------------
-       Media
-       ------------------------------------------------------- */
+    /*
+     * ------------------------------------------------------
+     * Media
+     * ------------------------------------------------------
+     */
 
     const media = {};
 
@@ -534,6 +647,7 @@ function mergeAnalytics(
             ...Object.keys(
                 localMedia
             )
+
         ]);
 
 
@@ -641,6 +755,22 @@ function mergeAnalytics(
    SYNC ANALYTICS
    ========================================================= */
 
+/*
+|--------------------------------------------------------------------------
+| syncAnalytics
+|--------------------------------------------------------------------------
+|
+| Strategy:
+|
+| 1. Load Firebase
+| 2. Read local analytics supplied by app.js
+| 3. Merge both
+| 4. Save merged result back to Firebase
+| 5. Return merged analytics
+|
+|--------------------------------------------------------------------------
+*/
+
 async function syncAnalytics(
     localAnalytics
 ) {
@@ -673,9 +803,9 @@ async function syncAnalytics(
             await loadFirebaseAnalytics();
 
 
-        /* ---------------------------------------------------
-           No remote data yet
-           --------------------------------------------------- */
+        /*
+         * No remote data yet.
+         */
 
         if (!remoteAnalytics) {
 
@@ -694,8 +824,7 @@ async function syncAnalytics(
 
                 success: true,
 
-                analytics:
-                    local,
+                analytics: local,
 
                 source:
                     "local-upload"
@@ -705,9 +834,9 @@ async function syncAnalytics(
         }
 
 
-        /* ---------------------------------------------------
-           Merge local + remote
-           --------------------------------------------------- */
+        /*
+         * Merge local + remote.
+         */
 
         const merged =
             mergeAnalytics(
@@ -716,9 +845,9 @@ async function syncAnalytics(
             );
 
 
-        /* ---------------------------------------------------
-           Save merged copy
-           --------------------------------------------------- */
+        /*
+         * Save merged copy.
+         */
 
         await saveFirebaseAnalytics(
             merged
@@ -729,8 +858,7 @@ async function syncAnalytics(
 
             success: true,
 
-            analytics:
-                merged,
+            analytics: merged,
 
             source:
                 "merged"
@@ -769,6 +897,16 @@ async function syncAnalytics(
 /* =========================================================
    PUSH SINGLE SESSION
    ========================================================= */
+
+/*
+|--------------------------------------------------------------------------
+| saveFirebaseSession
+|--------------------------------------------------------------------------
+|
+| Convenience helper if app.js wants to save a completed
+| session separately.
+|--------------------------------------------------------------------------
+*/
 
 async function saveFirebaseSession(
     session,
@@ -867,6 +1005,20 @@ function getFirestoreDB() {
 /* =========================================================
    GLOBAL API
    ========================================================= */
+
+/*
+ * app.js can use:
+ *
+ * window.ArchiveFirebase.isReady()
+ *
+ * window.ArchiveFirebase.loadAnalytics()
+ *
+ * window.ArchiveFirebase.saveAnalytics(data)
+ *
+ * window.ArchiveFirebase.syncAnalytics(data)
+ *
+ * window.ArchiveFirebase.saveSession(session, data)
+ */
 
 window.ArchiveFirebase = {
 

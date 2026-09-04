@@ -11,7 +11,6 @@ const CONFIG = Object.freeze({
         4, 
         11,
         12,
-        17,
         13,
         16,
     ]),
@@ -290,6 +289,57 @@ function loadAnalytics() {
 }
 let analytics =
     loadAnalytics();
+
+let firebaseSyncPromise = Promise.resolve();
+let firebaseSyncTimer = null;
+
+function hasFirebaseAnalytics() {
+    return Boolean(
+        window.ArchiveFirebase &&
+        typeof window.ArchiveFirebase.syncAnalytics === "function"
+    );
+}
+
+function queueFirebaseAnalyticsSync() {
+    if (!hasFirebaseAnalytics()) return;
+    if (firebaseSyncTimer) return;
+
+    firebaseSyncTimer = window.setTimeout(() => {
+        firebaseSyncTimer = null;
+        firebaseSyncPromise = firebaseSyncPromise.then(async () => {
+            try {
+                const result = await window.ArchiveFirebase.syncAnalytics(analytics);
+                if (result?.success && result.analytics) {
+                    analytics = normalizeAnalytics(result.analytics);
+                    localStorage.setItem(
+                        CONFIG.storage.analytics,
+                        JSON.stringify(analytics)
+                    );
+                }
+            } catch (error) {
+                console.warn("Firebase analytics sync failed.", error);
+            }
+        });
+    }, 100);
+}
+
+async function loadSharedFirebaseAnalytics() {
+    if (!hasFirebaseAnalytics()) return false;
+    try {
+        const result = await window.ArchiveFirebase.syncAnalytics(analytics);
+        if (result?.success && result.analytics) {
+            analytics = normalizeAnalytics(result.analytics);
+            localStorage.setItem(
+                CONFIG.storage.analytics,
+                JSON.stringify(analytics)
+            );
+            return true;
+        }
+    } catch (error) {
+        console.warn("Shared Firebase analytics unavailable.", error);
+    }
+    return false;
+}
 function saveAnalytics() {
     try {
         analytics.updatedAt =
@@ -304,6 +354,7 @@ function saveAnalytics() {
             error
         );
     }
+    queueFirebaseAnalyticsSync();
 }
 const preferences =
     loadPreferences();
@@ -506,12 +557,15 @@ function getMediaById(id) {
         ) || null
     );
 }
-function initializeApp() {
+async function initializeApp() {
     applyPreferences();
     renderSongs();
     initializeViewMode();
     initializeMonthSelector();
     bindEvents();
+    updateViewerUI();
+    await loadSharedFirebaseAnalytics();
+    initializeMonthSelector();
     updateViewerUI();
     hideLoader();
     console.log(
@@ -2713,9 +2767,9 @@ window.ArchiveApp = {
     saveAnalytics,
     getArchiveStats
 };
-function boot() {
+async function boot() {
     repairAnalytics();
-    initializeApp();
+    await initializeApp();
 }
 if (
     document.readyState ===
@@ -2723,11 +2777,19 @@ if (
 ) {
     document.addEventListener(
         "DOMContentLoaded",
-        boot,
+        () => {
+            boot().catch(error => {
+                console.error("Archive boot failed:", error);
+                hideLoader();
+            });
+        },
         {
             once: true
         }
     );
 } else {
-    boot();
+    boot().catch(error => {
+        console.error("Archive boot failed:", error);
+        hideLoader();
+    });
 }
