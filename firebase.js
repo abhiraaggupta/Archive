@@ -1,1035 +1,650 @@
 /* =========================================================
    ARCHIVE — FIREBASE
-   Firebase initialization + Firestore analytics sync
+   Shared analytics sync for Archive
    ========================================================= */
 
 "use strict";
 
-/*
-|--------------------------------------------------------------------------
-| FIREBASE SDK
-|--------------------------------------------------------------------------
-| Using Firebase's official modular browser SDK.
-*/
-
-import {
-    initializeApp
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { initializeApp } from
+    "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
 import {
     getFirestore,
     doc,
     getDoc,
     setDoc,
-    updateDoc,
+    runTransaction,
     serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+} from
+    "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 
 /* =========================================================
    FIREBASE CONFIG
    ========================================================= */
 
-/*
- * Firebase Console:
- *
- * Project settings
- *      ↓
- * Your apps
- *      ↓
- * Web app
- *      ↓
- * Firebase SDK snippet
- *      ↓
- * Config
- *
- * Yahan apni ORIGINAL Firebase config paste karo.
- */
-
 const firebaseConfig = {
-
     apiKey: "AIzaSyBfFPH9g4SPwxyvt81MmZNw-2WTQ72pZ0k",
-
-    authDomain:
-        "archive-2912.firebaseapp.com",
-
-    projectId:
-        "archive-2912",
-
-    storageBucket:
-        "archive-2912.firebasestorage.app",
-
-    messagingSenderId:
-        "437886370669",
-
-    appId:
-        "1:437886370669:web:aa2429225420a0abf51064"
-
+    authDomain: "archive-2912.firebaseapp.com",
+    projectId: "archive-2912",
+    storageBucket: "archive-2912.firebasestorage.app",
+    messagingSenderId: "437886370669",
+    appId: "1:437886370669:web:aa2429225420a0abf51064"
 };
 
 
 /* =========================================================
-   FIREBASE INITIALIZATION
+   INITIALIZE
    ========================================================= */
 
 let firebaseApp = null;
-
 let db = null;
-
 let firebaseReady = false;
 
-
-/*
-|--------------------------------------------------------------------------
-| Initialize Firebase
-|--------------------------------------------------------------------------
-*/
-
 try {
+    firebaseApp = initializeApp(firebaseConfig);
+    db = getFirestore(firebaseApp);
+    firebaseReady = true;
 
-    /*
-     * Don't initialize Firebase if the config hasn't
-     * been filled in yet.
-     */
-
-    const configIsValid =
-        firebaseConfig.apiKey &&
-        firebaseConfig.apiKey !== "YOUR_API_KEY" &&
-        firebaseConfig.projectId &&
-        firebaseConfig.projectId !== "YOUR_PROJECT_ID";
-
-
-    if (configIsValid) {
-
-        firebaseApp =
-            initializeApp(
-                firebaseConfig
-            );
-
-
-        db =
-            getFirestore(
-                firebaseApp
-            );
-
-
-        firebaseReady = true;
-
-
-        console.log(
-            "[Firebase] Connected successfully."
-        );
-
-    } else {
-
-        console.warn(
-            "[Firebase] Configuration is missing. " +
-            "Running with localStorage only."
-        );
-
-    }
-
+    console.log("[Archive Firebase] Ready.");
 } catch (error) {
-
     firebaseReady = false;
 
     console.error(
-        "[Firebase] Initialization failed:",
+        "[Archive Firebase] Initialization failed:",
         error
     );
-
 }
 
 
 /* =========================================================
-   CONSTANTS
+   FIRESTORE LOCATION
    ========================================================= */
 
-const FIREBASE_COLLECTION =
-    "archiveUsers";
-
-const FIREBASE_DOCUMENT =
-    "main";
-
-
-/* =========================================================
-   INTERNAL HELPERS
-   ========================================================= */
-
-/*
-|--------------------------------------------------------------------------
-| Get Firestore document reference
-|--------------------------------------------------------------------------
-*/
-
-function getAnalyticsRef() {
-
-    if (!db) {
-        return null;
-    }
+const ANALYTICS_REF = () => {
+    if (!db) return null;
 
     return doc(
         db,
-        FIREBASE_COLLECTION,
-        FIREBASE_DOCUMENT
+        "archiveUsers",
+        "main"
     );
+};
 
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function number(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| Safe clone
-|--------------------------------------------------------------------------
-|
-| Firestore doesn't need undefined values.
-| This also prevents accidental mutation of local objects.
-*/
-
-function cleanObject(value) {
-
-    if (value === undefined) {
-        return null;
-    }
-
-
-    if (value === null) {
-        return null;
-    }
-
+function clean(value) {
+    if (value === undefined) return null;
+    if (value === null) return null;
 
     if (Array.isArray(value)) {
-
-        return value.map(
-            item => cleanObject(item)
-        );
-
+        return value.map(clean);
     }
-
 
     if (
         typeof value === "object" &&
         !(value instanceof Date)
     ) {
+        const result = {};
 
-        const output = {};
+        Object.keys(value).forEach(key => {
+            result[key] = clean(value[key]);
+        });
 
-        Object.keys(value).forEach(
-            key => {
-
-                const cleaned =
-                    cleanObject(
-                        value[key]
-                    );
-
-
-                if (
-                    cleaned !== undefined
-                ) {
-
-                    output[key] =
-                        cleaned;
-
-                }
-
-            }
-        );
-
-        return output;
-
+        return result;
     }
 
-
     return value;
-
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| Normalize analytics structure
-|--------------------------------------------------------------------------
-*/
-
 function normalizeAnalytics(data) {
-
-    const source =
-        data || {};
-
+    const source = data || {};
 
     return {
-
-        version:
-            Number(
-                source.version || 1
-            ),
-
+        version: number(source.version) || 1,
 
         createdAt:
             source.createdAt || null,
 
-
         updatedAt:
             source.updatedAt || null,
 
-
         sessions:
-            Array.isArray(
-                source.sessions
-            )
+            Array.isArray(source.sessions)
                 ? source.sessions
                 : [],
-
 
         media:
             source.media &&
             typeof source.media === "object"
-
                 ? source.media
-
                 : {}
-
     };
-
 }
 
 
 /* =========================================================
-   LOAD ANALYTICS
+   MERGE SESSIONS
    ========================================================= */
 
-/*
-|--------------------------------------------------------------------------
-| loadFirebaseAnalytics
-|--------------------------------------------------------------------------
-|
-| Returns:
-|
-|     analytics object
-|
-| or
-|
-|     null
-|
-| when Firebase isn't configured / unavailable.
-|--------------------------------------------------------------------------
-*/
+function mergeSessions(remoteSessions, localSessions) {
+    const map = new Map();
 
-async function loadFirebaseAnalytics() {
+    for (const session of remoteSessions || []) {
+        if (!session) continue;
 
-    if (!firebaseReady || !db) {
+        if (session.id) {
+            map.set(
+                String(session.id),
+                session
+            );
+        }
+    }
 
-        return null;
+    for (const session of localSessions || []) {
+        if (!session) continue;
 
+        if (session.id) {
+            map.set(
+                String(session.id),
+                session
+            );
+        }
+    }
+
+    return Array.from(map.values()).sort(
+        (a, b) => {
+            const at =
+                number(a.startedAt || a.timestamp);
+
+            const bt =
+                number(b.startedAt || b.timestamp);
+
+            return at - bt;
+        }
+    );
+}
+
+
+/* =========================================================
+   REBUILD MEDIA STATS
+   ========================================================= */
+
+function rebuildMediaStats(
+    sessions,
+    oldRemoteMedia = {}
+) {
+    const media = {};
+
+    /*
+     * First preserve old media data.
+     * This is important for analytics created by
+     * the previous version of Archive.
+     */
+
+    Object.keys(oldRemoteMedia || {}).forEach(
+        mediaId => {
+            const item =
+                oldRemoteMedia[mediaId];
+
+            if (!item) return;
+
+            media[mediaId] = {
+                ...item,
+                views:
+                    number(item.views),
+                time:
+                    number(item.time)
+            };
+        }
+    );
+
+
+    /*
+     * Rebuild statistics from sessions.
+     */
+
+    for (const session of sessions || []) {
+        if (!session) continue;
+
+        const sessionMedia =
+            session.media ||
+            session.mediaWatchTime ||
+            {};
+
+        const opened =
+            Array.isArray(session.mediaOpened)
+                ? session.mediaOpened
+                : [];
+
+
+        /*
+         * Watch time
+         */
+
+        Object.keys(sessionMedia).forEach(
+            mediaId => {
+                const value =
+                    sessionMedia[mediaId];
+
+                let watchTime = 0;
+
+                if (
+                    typeof value === "number"
+                ) {
+                    watchTime = value;
+                } else if (
+                    value &&
+                    typeof value === "object"
+                ) {
+                    watchTime =
+                        number(
+                            value.time ||
+                            value.watchTime ||
+                            value.seconds
+                        );
+                }
+
+                if (!media[mediaId]) {
+                    media[mediaId] = {
+                        views: 0,
+                        time: 0
+                    };
+                }
+
+                media[mediaId].time +=
+                    watchTime;
+            }
+        );
+
+
+        /*
+         * Views / opens
+         */
+
+        opened.forEach(mediaId => {
+            const id = String(mediaId);
+
+            if (!media[id]) {
+                media[id] = {
+                    views: 0,
+                    time: 0
+                };
+            }
+
+            media[id].views += 1;
+        });
+
+
+        /*
+         * Some older session formats store
+         * media inside an object.
+         */
+
+        if (
+            session.mediaStats &&
+            typeof session.mediaStats === "object"
+        ) {
+            Object.keys(
+                session.mediaStats
+            ).forEach(mediaId => {
+                const item =
+                    session.mediaStats[mediaId];
+
+                if (!media[mediaId]) {
+                    media[mediaId] = {
+                        views: 0,
+                        time: 0
+                    };
+                }
+
+                media[mediaId].views +=
+                    number(item?.views);
+
+                media[mediaId].time +=
+                    number(item?.time);
+            });
+        }
     }
 
 
+    return media;
+}
+
+
+/* =========================================================
+   LOAD
+   ========================================================= */
+
+async function loadFirebaseAnalytics() {
+    if (!firebaseReady || !db) {
+        return null;
+    }
+
     try {
-
         const reference =
-            getAnalyticsRef();
-
+            ANALYTICS_REF();
 
         if (!reference) {
-
             return null;
-
         }
-
 
         const snapshot =
-            await getDoc(
-                reference
-            );
-
+            await getDoc(reference);
 
         if (!snapshot.exists()) {
-
-            console.log(
-                "[Firebase] No analytics document found."
-            );
-
             return null;
-
         }
 
-
-        const data =
-            snapshot.data();
-
-
         return normalizeAnalytics(
-            data
+            snapshot.data()
         );
 
     } catch (error) {
-
         console.error(
-            "[Firebase] Failed to load analytics:",
+            "[Archive Firebase] Load failed:",
             error
         );
 
-
         return null;
-
     }
-
 }
 
 
 /* =========================================================
-   SAVE ANALYTICS
+   SAVE
    ========================================================= */
-
-/*
-|--------------------------------------------------------------------------
-| saveFirebaseAnalytics
-|--------------------------------------------------------------------------
-|
-| Saves the complete analytics object.
-|
-| We intentionally use setDoc() rather than trying to
-| update individual session fields.
-|
-| This keeps the Firebase structure synchronized with the
-| local analytics structure used by app.js.
-|--------------------------------------------------------------------------
-*/
 
 async function saveFirebaseAnalytics(
     analytics
 ) {
-
     if (
         !firebaseReady ||
         !db ||
         !analytics
     ) {
-
         return false;
-
     }
 
-
     try {
-
         const reference =
-            getAnalyticsRef();
-
+            ANALYTICS_REF();
 
         if (!reference) {
-
             return false;
-
         }
 
-
-        const cleaned =
-            cleanObject(
+        const data =
+            clean(
                 normalizeAnalytics(
                     analytics
                 )
             );
 
-
-        cleaned.updatedAt =
+        data.updatedAt =
             serverTimestamp();
-
-
-        if (!cleaned.createdAt) {
-
-            cleaned.createdAt =
-                serverTimestamp();
-
-        }
-
 
         await setDoc(
             reference,
-            cleaned,
-            {
-                merge: false
-            }
+            data,
+            { merge: true }
         );
-
-
-        console.log(
-            "[Firebase] Analytics saved."
-        );
-
 
         return true;
 
     } catch (error) {
-
         console.error(
-            "[Firebase] Failed to save analytics:",
+            "[Archive Firebase] Save failed:",
             error
         );
 
-
         return false;
-
     }
-
 }
 
 
 /* =========================================================
-   MERGE ANALYTICS
+   SYNC
    ========================================================= */
 
 /*
-|--------------------------------------------------------------------------
-| mergeAnalytics
-|--------------------------------------------------------------------------
-|
-| Used when Firebase already contains data and local data
-| also exists.
-|
-| Sessions are identified using session.id when available.
-| Media statistics are merged by media ID.
-|--------------------------------------------------------------------------
-*/
-
-function mergeAnalytics(
-    firebaseData,
-    localData
-) {
-
-    const firebaseAnalytics =
-        normalizeAnalytics(
-            firebaseData
-        );
-
-
-    const localAnalytics =
-        normalizeAnalytics(
-            localData
-        );
-
-
-    /*
-     * ------------------------------------------------------
-     * Sessions
-     * ------------------------------------------------------
-     */
-
-    const sessionMap =
-        new Map();
-
-
-    firebaseAnalytics.sessions.forEach(
-        session => {
-
-            if (
-                session &&
-                session.id
-            ) {
-
-                sessionMap.set(
-                    session.id,
-                    session
-                );
-
-            }
-
-        }
-    );
-
-
-    localAnalytics.sessions.forEach(
-        session => {
-
-            if (
-                session &&
-                session.id
-            ) {
-
-                sessionMap.set(
-                    session.id,
-                    session
-                );
-
-            }
-
-        }
-    );
-
-
-    /*
-     * Sessions without IDs are preserved.
-     */
-
-    const sessionsWithoutIds = [
-
-        ...firebaseAnalytics.sessions.filter(
-            session =>
-                !session ||
-                !session.id
-        ),
-
-        ...localAnalytics.sessions.filter(
-            session =>
-                !session ||
-                !session.id
-        )
-
-    ];
-
-
-    const mergedSessions = [
-
-        ...Array.from(
-            sessionMap.values()
-        ),
-
-        ...sessionsWithoutIds
-
-    ];
-
-
-    /*
-     * Sort chronologically.
-     */
-
-    mergedSessions.sort(
-        (
-            first,
-            second
-        ) => {
-
-            const firstTime =
-                Number(
-                    first?.startedAt ||
-                    first?.timestamp ||
-                    0
-                );
-
-
-            const secondTime =
-                Number(
-                    second?.startedAt ||
-                    second?.timestamp ||
-                    0
-                );
-
-
-            return firstTime - secondTime;
-
-        }
-    );
-
-
-    /*
-     * ------------------------------------------------------
-     * Media
-     * ------------------------------------------------------
-     */
-
-    const media = {};
-
-
-    const firebaseMedia =
-        firebaseAnalytics.media || {};
-
-
-    const localMedia =
-        localAnalytics.media || {};
-
-
-    const mediaIds =
-        new Set([
-            ...Object.keys(
-                firebaseMedia
-            ),
-
-            ...Object.keys(
-                localMedia
-            )
-
-        ]);
-
-
-    mediaIds.forEach(
-        mediaId => {
-
-            const remote =
-                firebaseMedia[
-                    mediaId
-                ];
-
-
-            const local =
-                localMedia[
-                    mediaId
-                ];
-
-
-            if (!remote && local) {
-
-                media[mediaId] =
-                    cleanObject(
-                        local
-                    );
-
-                return;
-
-            }
-
-
-            if (remote && !local) {
-
-                media[mediaId] =
-                    cleanObject(
-                        remote
-                    );
-
-                return;
-
-            }
-
-
-            if (
-                remote &&
-                local
-            ) {
-
-                media[mediaId] = {
-
-                    ...remote,
-
-                    ...local,
-
-                    views:
-                        Math.max(
-                            Number(
-                                remote.views || 0
-                            ),
-                            Number(
-                                local.views || 0
-                            )
-                        ),
-
-                    time:
-                        Math.max(
-                            Number(
-                                remote.time || 0
-                            ),
-                            Number(
-                                local.time || 0
-                            )
-                        )
-
-                };
-
-            }
-
-        }
-    );
-
-
-    return {
-
-        version: 1,
-
-        createdAt:
-            firebaseAnalytics.createdAt ||
-            localAnalytics.createdAt ||
-            null,
-
-        updatedAt:
-            Date.now(),
-
-        sessions:
-            mergedSessions,
-
-        media
-
-    };
-
-}
-
-
-/* =========================================================
-   SYNC ANALYTICS
-   ========================================================= */
-
-/*
-|--------------------------------------------------------------------------
-| syncAnalytics
-|--------------------------------------------------------------------------
-|
-| Strategy:
-|
-| 1. Load Firebase
-| 2. Read local analytics supplied by app.js
-| 3. Merge both
-| 4. Save merged result back to Firebase
-| 5. Return merged analytics
-|
-|--------------------------------------------------------------------------
-*/
+ * This is the main function used by app.js.
+ *
+ * Important:
+ *
+ * We use a Firestore transaction.
+ *
+ * Device A + Device B can update at almost
+ * the same time. Firestore retries the transaction
+ * if the document changed while we were writing.
+ *
+ * Sessions are merged by session.id.
+ *
+ * Therefore:
+ *
+ * Device A session
+ * +
+ * Device B session
+ *
+ * = both remain in Firebase.
+ */
 
 async function syncAnalytics(
     localAnalytics
 ) {
+    const local =
+        normalizeAnalytics(
+            localAnalytics
+        );
 
-    if (
-        !firebaseReady ||
-        !db
-    ) {
-
+    if (!firebaseReady || !db) {
         return {
-
             success: false,
-
-            analytics:
-                normalizeAnalytics(
-                    localAnalytics
-                ),
-
-            source:
-                "local"
-
+            source: "local",
+            analytics: local
         };
-
     }
 
 
     try {
+        const reference =
+            ANALYTICS_REF();
 
-        const remoteAnalytics =
-            await loadFirebaseAnalytics();
-
-
-        /*
-         * No remote data yet.
-         */
-
-        if (!remoteAnalytics) {
-
-            const local =
-                normalizeAnalytics(
-                    localAnalytics
-                );
-
-
-            await saveFirebaseAnalytics(
-                local
-            );
-
-
+        if (!reference) {
             return {
-
-                success: true,
-
-                analytics: local,
-
-                source:
-                    "local-upload"
-
+                success: false,
+                source: "local",
+                analytics: local
             };
-
         }
 
 
-        /*
-         * Merge local + remote.
-         */
-
         const merged =
-            mergeAnalytics(
-                remoteAnalytics,
-                localAnalytics
+            await runTransaction(
+                db,
+                async transaction => {
+
+                    const snapshot =
+                        await transaction.get(
+                            reference
+                        );
+
+                    const remote =
+                        snapshot.exists()
+                            ? normalizeAnalytics(
+                                snapshot.data()
+                            )
+                            : {
+                                version: 1,
+                                createdAt: null,
+                                updatedAt: null,
+                                sessions: [],
+                                media: {}
+                            };
+
+
+                    /*
+                     * Merge sessions.
+                     */
+
+                    const sessions =
+                        mergeSessions(
+                            remote.sessions,
+                            local.sessions
+                        );
+
+
+                    /*
+                     * Rebuild media statistics.
+                     */
+
+                    const media =
+                        rebuildMediaStats(
+                            sessions,
+                            remote.media
+                        );
+
+
+                    const result = {
+                        version: 1,
+
+                        createdAt:
+                            remote.createdAt ||
+                            local.createdAt ||
+                            Date.now(),
+
+                        updatedAt:
+                            Date.now(),
+
+                        sessions,
+
+                        media
+                    };
+
+
+                    transaction.set(
+                        reference,
+                        {
+                            ...clean(result),
+                            updatedAt:
+                                serverTimestamp()
+                        },
+                        {
+                            merge: true
+                        }
+                    );
+
+
+                    return result;
+                }
             );
 
 
-        /*
-         * Save merged copy.
-         */
-
-        await saveFirebaseAnalytics(
-            merged
+        console.log(
+            "[Archive Firebase] Analytics synced."
         );
 
 
         return {
-
             success: true,
-
-            analytics: merged,
-
-            source:
-                "merged"
-
+            source: "firebase",
+            analytics: merged
         };
 
     } catch (error) {
-
         console.error(
-            "[Firebase] Sync failed:",
+            "[Archive Firebase] Sync failed:",
             error
         );
 
+        /*
+         * Firebase failure should NEVER
+         * break the Archive viewer.
+         */
 
         return {
-
             success: false,
-
-            analytics:
-                normalizeAnalytics(
-                    localAnalytics
-                ),
-
-            source:
-                "local",
-
-            error
-
+            source: "local",
+            analytics: local
         };
-
     }
-
 }
 
 
 /* =========================================================
-   PUSH SINGLE SESSION
+   SAVE SINGLE SESSION
    ========================================================= */
-
-/*
-|--------------------------------------------------------------------------
-| saveFirebaseSession
-|--------------------------------------------------------------------------
-|
-| Convenience helper if app.js wants to save a completed
-| session separately.
-|--------------------------------------------------------------------------
-*/
 
 async function saveFirebaseSession(
     session,
     currentAnalytics
 ) {
-
-    if (
-        !firebaseReady ||
-        !session
-    ) {
-
+    if (!session) {
         return false;
-
     }
 
 
-    try {
+    /*
+     * Prefer the normal sync path.
+     *
+     * This keeps the same session ID and
+     * prevents duplicate sessions.
+     */
 
-        const analytics =
-            normalizeAnalytics(
-                currentAnalytics
-            );
-
-
-        const exists =
-            analytics.sessions.some(
-                existing =>
-                    existing &&
-                    session &&
-                    existing.id === session.id
-            );
+    const analytics =
+        normalizeAnalytics(
+            currentAnalytics
+        );
 
 
-        if (!exists) {
+    if (
+        !analytics.sessions.some(
+            item =>
+                item &&
+                item.id === session.id
+        )
+    ) {
+        analytics.sessions.push(
+            session
+        );
+    }
 
-            analytics.sessions.push(
-                cleanObject(
-                    session
-                )
-            );
 
-        }
-
-
-        return await saveFirebaseAnalytics(
+    const result =
+        await syncAnalytics(
             analytics
         );
 
-    } catch (error) {
-
-        console.error(
-            "[Firebase] Session save failed:",
-            error
-        );
-
-
-        return false;
-
-    }
-
-}
-
-
-/* =========================================================
-   CONNECTION STATUS
-   ========================================================= */
-
-function isFirebaseReady() {
-
-    return (
-        firebaseReady === true &&
-        db !== null
+    return Boolean(
+        result.success
     );
-
 }
 
 
 /* =========================================================
-   FIREBASE APP ACCESS
+   PUBLIC API
    ========================================================= */
-
-function getFirebaseApp() {
-
-    return firebaseApp;
-
-}
-
-
-function getFirestoreDB() {
-
-    return db;
-
-}
-
-
-/* =========================================================
-   GLOBAL API
-   ========================================================= */
-
-/*
- * app.js can use:
- *
- * window.ArchiveFirebase.isReady()
- *
- * window.ArchiveFirebase.loadAnalytics()
- *
- * window.ArchiveFirebase.saveAnalytics(data)
- *
- * window.ArchiveFirebase.syncAnalytics(data)
- *
- * window.ArchiveFirebase.saveSession(session, data)
- */
 
 window.ArchiveFirebase = {
 
     isReady:
-        isFirebaseReady,
+        () => firebaseReady,
 
     getApp:
-        getFirebaseApp,
+        () => firebaseApp,
 
     getDB:
-        getFirestoreDB,
+        () => db,
 
     loadAnalytics:
         loadFirebaseAnalytics,
@@ -1042,7 +657,6 @@ window.ArchiveFirebase = {
 
     saveSession:
         saveFirebaseSession
-
 };
 
 
@@ -1051,44 +665,11 @@ window.ArchiveFirebase = {
    ========================================================= */
 
 export {
-
     firebaseApp,
-
     db,
-
     firebaseReady,
-
     loadFirebaseAnalytics,
-
     saveFirebaseAnalytics,
-
     syncAnalytics,
-
-    saveFirebaseSession,
-
-    isFirebaseReady,
-
-    getFirebaseApp,
-
-    getFirestoreDB
-
+    saveFirebaseSession
 };
-
-
-/* =========================================================
-   READY MESSAGE
-   ========================================================= */
-
-if (firebaseReady) {
-
-    console.log(
-        "[Archive Firebase] Ready."
-    );
-
-} else {
-
-    console.log(
-        "[Archive Firebase] Local analytics mode."
-    );
-
-}

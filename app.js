@@ -24,7 +24,9 @@ const CONFIG = Object.freeze({
     defaultVolume: 0.8,
     storage: {
         analytics: "archive_analytics_v3",
-        preferences: "archive_preferences_v3"
+        preferences: "archive_preferences_v3",
+        deviceId: "archive_device_id_v1",
+        legacyMigrated: "archive_legacy_migrated_v1"
     }
 });
 const SONG_NAMES = [
@@ -289,57 +291,6 @@ function loadAnalytics() {
 }
 let analytics =
     loadAnalytics();
-
-let firebaseSyncPromise = Promise.resolve();
-let firebaseSyncTimer = null;
-
-function hasFirebaseAnalytics() {
-    return Boolean(
-        window.ArchiveFirebase &&
-        typeof window.ArchiveFirebase.syncAnalytics === "function"
-    );
-}
-
-function queueFirebaseAnalyticsSync() {
-    if (!hasFirebaseAnalytics()) return;
-    if (firebaseSyncTimer) return;
-
-    firebaseSyncTimer = window.setTimeout(() => {
-        firebaseSyncTimer = null;
-        firebaseSyncPromise = firebaseSyncPromise.then(async () => {
-            try {
-                const result = await window.ArchiveFirebase.syncAnalytics(analytics);
-                if (result?.success && result.analytics) {
-                    analytics = normalizeAnalytics(result.analytics);
-                    localStorage.setItem(
-                        CONFIG.storage.analytics,
-                        JSON.stringify(analytics)
-                    );
-                }
-            } catch (error) {
-                console.warn("Firebase analytics sync failed.", error);
-            }
-        });
-    }, 100);
-}
-
-async function loadSharedFirebaseAnalytics() {
-    if (!hasFirebaseAnalytics()) return false;
-    try {
-        const result = await window.ArchiveFirebase.syncAnalytics(analytics);
-        if (result?.success && result.analytics) {
-            analytics = normalizeAnalytics(result.analytics);
-            localStorage.setItem(
-                CONFIG.storage.analytics,
-                JSON.stringify(analytics)
-            );
-            return true;
-        }
-    } catch (error) {
-        console.warn("Shared Firebase analytics unavailable.", error);
-    }
-    return false;
-}
 function saveAnalytics() {
     try {
         analytics.updatedAt =
@@ -354,8 +305,65 @@ function saveAnalytics() {
             error
         );
     }
-    queueFirebaseAnalyticsSync();
 }
+
+let firebaseStartupPromise = null;
+
+function getArchiveDeviceId() {
+    try {
+        let id = localStorage.getItem(CONFIG.storage.deviceId);
+        if (!id) {
+            id = createSessionId();
+            localStorage.setItem(CONFIG.storage.deviceId, id);
+        }
+        return id;
+    } catch (error) {
+        return createSessionId();
+    }
+}
+
+function hasArchiveFirebase() {
+    return Boolean(
+        window.ArchiveFirebase &&
+        typeof window.ArchiveFirebase.syncAnalytics === "function"
+    );
+}
+
+async function syncSharedAnalytics() {
+    if (!hasArchiveFirebase()) {
+        return;
+    }
+    try {
+        const deviceId = getArchiveDeviceId();
+        const shouldMigrateLegacy =
+            localStorage.getItem(CONFIG.storage.legacyMigrated) !== "1";
+        const result = await window.ArchiveFirebase.syncAnalytics(
+            analytics,
+            {
+                deviceId,
+                migrateLegacy: shouldMigrateLegacy
+            }
+        );
+        if (result && result.success && result.analytics) {
+            analytics = normalizeAnalytics(result.analytics);
+            localStorage.setItem(
+                CONFIG.storage.analytics,
+                JSON.stringify(analytics)
+            );
+            if (shouldMigrateLegacy && result.legacyMigrated) {
+                localStorage.setItem(
+                    CONFIG.storage.legacyMigrated,
+                    "1"
+                );
+            }
+            repairAnalytics();
+            renderDashboard();
+        }
+    } catch (error) {
+        console.warn("Shared Firebase analytics unavailable; using local analytics.", error);
+    }
+}
+
 const preferences =
     loadPreferences();
 const state = {
@@ -564,8 +572,17 @@ async function initializeApp() {
     initializeMonthSelector();
     bindEvents();
     updateViewerUI();
-    await loadSharedFirebaseAnalytics();
+
+    await Promise.race([
+        syncSharedAnalytics(),
+        new Promise(resolve =>
+            window.setTimeout(resolve, 3000)
+        )
+    ]);
+
+    repairAnalytics();
     initializeMonthSelector();
+    renderDashboard();
     updateViewerUI();
     hideLoader();
     console.log(
@@ -1252,7 +1269,9 @@ function startSession() {
             getTodayKey(now),
         mediaOpened: 0,
         uniqueMedia: [],
-        watchTime: 0
+        watchTime: 0,
+        mediaViews: {},
+        mediaWatchTime: {}
     };
     state.sessionStarted =
         true;
@@ -1275,6 +1294,7 @@ function endSession() {
     state.currentSession.endTime =
         new Date().toISOString();
     saveAnalytics();
+    syncSharedAnalytics();
     state.currentSession =
         null;
     state.sessionStarted =
@@ -1759,6 +1779,10 @@ function registerMediaOpen(media) {
                 media.id
             );
         }
+        state.currentSession.mediaViews[media.id] =
+            normalizeSeconds(
+                state.currentSession.mediaViews[media.id]
+            ) + 1;
     }
     saveAnalytics();
 }
@@ -1798,6 +1822,10 @@ function commitCurrentMediaTime(
         ) + seconds;
     state.currentSession.watchTime +=
         seconds;
+    state.currentSession.mediaWatchTime[media.id] =
+        normalizeSeconds(
+            state.currentSession.mediaWatchTime[media.id]
+        ) + seconds;
     state.mediaElapsedSeconds =
         0;
     state.mediaStartTimestamp =
@@ -1814,6 +1842,7 @@ function handleVisibilityChange() {
     ) {
         commitCurrentMediaTime();
         saveAnalytics();
+        syncSharedAnalytics();
         savePreferences();
     } else {
         if (
@@ -1827,6 +1856,7 @@ function handleVisibilityChange() {
 function handlePageExit() {
     commitCurrentMediaTime();
     saveAnalytics();
+    syncSharedAnalytics();
     savePreferences();
 }
 function handleKeyboard(event) {
@@ -2725,7 +2755,17 @@ function repairAnalytics() {
                     watchTime:
                         normalizeSeconds(
                             session.watchTime
-                        )
+                        ),
+                    mediaViews:
+                        session.mediaViews &&
+                        typeof session.mediaViews === "object"
+                            ? session.mediaViews
+                            : {},
+                    mediaWatchTime:
+                        session.mediaWatchTime &&
+                        typeof session.mediaWatchTime === "object"
+                            ? session.mediaWatchTime
+                            : {}
                 })
             );
 }
@@ -2769,7 +2809,12 @@ window.ArchiveApp = {
 };
 async function boot() {
     repairAnalytics();
-    await initializeApp();
+    try {
+        await initializeApp();
+    } catch (error) {
+        console.error("Archive startup failed.", error);
+        hideLoader();
+    }
 }
 if (
     document.readyState ===
@@ -2777,19 +2822,11 @@ if (
 ) {
     document.addEventListener(
         "DOMContentLoaded",
-        () => {
-            boot().catch(error => {
-                console.error("Archive boot failed:", error);
-                hideLoader();
-            });
-        },
+        boot,
         {
             once: true
         }
     );
 } else {
-    boot().catch(error => {
-        console.error("Archive boot failed:", error);
-        hideLoader();
-    });
+    boot();
 }
