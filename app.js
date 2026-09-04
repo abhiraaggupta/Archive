@@ -13,6 +13,7 @@ const CONFIG = Object.freeze({
         12,
         13,
         16,
+        17,
     ]),
     hoverDelay: 500,
     transitionDuration: 280,
@@ -1798,7 +1799,67 @@ function commitCurrentMediaTime(
         normalizeSeconds(
             state.mediaElapsedSeconds
         );
+    if (seconds <= 0) {function commitCurrentMediaTime(
+    save = true
+) {
+    if (
+        !state.currentSession
+    ) {
+        return;
+    }
+
+    const seconds =
+        normalizeSeconds(
+            state.mediaElapsedSeconds
+        );
+
     if (seconds <= 0) {
+        return;
+    }
+
+    const media =
+        getMedia(
+            state.currentMediaIndex
+        );
+
+    if (!media) {
+        return;
+    }
+
+    const stats =
+        ensureMediaAnalytics(
+            media
+        );
+
+    const monthKey =
+        getMonthKey();
+
+    stats.totalWatchTime +=
+        seconds;
+
+    stats.monthly[monthKey] =
+        normalizeSeconds(
+            stats.monthly[monthKey]
+        ) + seconds;
+
+    state.currentSession.watchTime +=
+        seconds;
+
+    state.currentSession.mediaWatchTime[media.id] =
+        normalizeSeconds(
+            state.currentSession.mediaWatchTime[media.id]
+        ) + seconds;
+
+    /*
+     * Timer ko 0 par reset nahi karna.
+     * Sirf committed portion ko track karna hai.
+     */
+    state.mediaElapsedSeconds = 0;
+
+    if (save) {
+        saveAnalytics();
+    }
+}
         return;
     }
     const media =
