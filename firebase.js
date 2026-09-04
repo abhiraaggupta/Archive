@@ -34,7 +34,7 @@ const firebaseConfig = {
 
 
 /* =========================================================
-   INITIALIZE
+   INITIALIZE FIREBASE
    ========================================================= */
 
 let firebaseApp = null;
@@ -58,11 +58,13 @@ try {
 
 
 /* =========================================================
-   FIRESTORE LOCATION
+   FIRESTORE REFERENCE
    ========================================================= */
 
 const ANALYTICS_REF = () => {
-    if (!db) return null;
+    if (!db) {
+        return null;
+    }
 
     return doc(
         db,
@@ -73,18 +75,80 @@ const ANALYTICS_REF = () => {
 
 
 /* =========================================================
+   LOCAL DEVICE ID
+   ========================================================= */
+
+const DEVICE_STORAGE_KEY =
+    "archive_firebase_device_id_v1";
+
+function createDeviceId() {
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID === "function"
+    ) {
+        return window.crypto.randomUUID();
+    }
+
+    return [
+        "device",
+        Date.now(),
+        Math.random()
+            .toString(16)
+            .slice(2)
+    ].join("-");
+}
+
+function getDeviceId() {
+    try {
+        let deviceId =
+            localStorage.getItem(
+                DEVICE_STORAGE_KEY
+            );
+
+        if (!deviceId) {
+            deviceId = createDeviceId();
+
+            localStorage.setItem(
+                DEVICE_STORAGE_KEY,
+                deviceId
+            );
+        }
+
+        return deviceId;
+    } catch (error) {
+        console.warn(
+            "[Archive Firebase] Device ID unavailable.",
+            error
+        );
+
+        return "fallback-device";
+    }
+}
+
+const DEVICE_ID =
+    getDeviceId();
+
+
+/* =========================================================
    HELPERS
    ========================================================= */
 
 function number(value) {
     const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
+
+    return Number.isFinite(n)
+        ? n
+        : 0;
 }
 
-
 function clean(value) {
-    if (value === undefined) return null;
-    if (value === null) return null;
+    if (value === undefined) {
+        return null;
+    }
+
+    if (value === null) {
+        return null;
+    }
 
     if (Array.isArray(value)) {
         return value.map(clean);
@@ -97,7 +161,8 @@ function clean(value) {
         const result = {};
 
         Object.keys(value).forEach(key => {
-            result[key] = clean(value[key]);
+            result[key] =
+                clean(value[key]);
         });
 
         return result;
@@ -107,11 +172,20 @@ function clean(value) {
 }
 
 
+/* =========================================================
+   ANALYTICS NORMALIZATION
+   ========================================================= */
+
 function normalizeAnalytics(data) {
-    const source = data || {};
+    const source =
+        data &&
+        typeof data === "object"
+            ? data
+            : {};
 
     return {
-        version: number(source.version) || 1,
+        version:
+            number(source.version) || 3,
 
         createdAt:
             source.createdAt || null,
@@ -134,200 +208,577 @@ function normalizeAnalytics(data) {
 
 
 /* =========================================================
-   MERGE SESSIONS
+   SESSION HELPERS
    ========================================================= */
 
-function mergeSessions(remoteSessions, localSessions) {
-    const map = new Map();
+function getSessionId(session) {
+    if (!session) {
+        return null;
+    }
 
-    for (const session of remoteSessions || []) {
-        if (!session) continue;
+    if (session.id) {
+        return String(session.id);
+    }
 
-        if (session.id) {
-            map.set(
-                String(session.id),
-                session
-            );
+    return null;
+}
+
+function getSessionTime(session) {
+    if (!session) {
+        return 0;
+    }
+
+    const candidates = [
+        session.startTime,
+        session.startedAt,
+        session.timestamp,
+        session.date
+    ];
+
+    for (const value of candidates) {
+        if (!value) {
+            continue;
+        }
+
+        const time =
+            new Date(value).getTime();
+
+        if (Number.isFinite(time)) {
+            return time;
+        }
+
+        const numeric =
+            Number(value);
+
+        if (Number.isFinite(numeric)) {
+            return numeric;
         }
     }
 
-    for (const session of localSessions || []) {
-        if (!session) continue;
+    return 0;
+}
 
-        if (session.id) {
-            map.set(
-                String(session.id),
-                session
+
+/* =========================================================
+   DEVICE OWNED SESSION IDS
+   ========================================================= */
+
+const OWNED_SESSIONS_KEY =
+    "archive_firebase_owned_sessions_v1";
+
+function loadOwnedSessionIds() {
+    try {
+        const raw =
+            localStorage.getItem(
+                OWNED_SESSIONS_KEY
             );
+
+        if (!raw) {
+            return [];
         }
+
+        const parsed =
+            JSON.parse(raw);
+
+        return Array.isArray(parsed)
+            ? parsed.map(String)
+            : [];
+    } catch (error) {
+        console.warn(
+            "[Archive Firebase] Owned session IDs could not be loaded.",
+            error
+        );
+
+        return [];
+    }
+}
+
+function saveOwnedSessionIds(ids) {
+    try {
+        localStorage.setItem(
+            OWNED_SESSIONS_KEY,
+            JSON.stringify(
+                [...new Set(ids.map(String))]
+            )
+        );
+    } catch (error) {
+        console.warn(
+            "[Archive Firebase] Owned session IDs could not be saved.",
+            error
+        );
+    }
+}
+
+
+/* =========================================================
+   SESSION MERGING
+   ========================================================= */
+
+function mergeSessions(
+    remoteSessions,
+    localSessions
+) {
+    const map =
+        new Map();
+
+    for (
+        const session
+        of remoteSessions || []
+    ) {
+        if (!session) {
+            continue;
+        }
+
+        const id =
+            getSessionId(session);
+
+        if (!id) {
+            continue;
+        }
+
+        map.set(
+            id,
+            session
+        );
     }
 
-    return Array.from(map.values()).sort(
-        (a, b) => {
-            const at =
-                number(a.startedAt || a.timestamp);
-
-            const bt =
-                number(b.startedAt || b.timestamp);
-
-            return at - bt;
+    for (
+        const session
+        of localSessions || []
+    ) {
+        if (!session) {
+            continue;
         }
+
+        const id =
+            getSessionId(session);
+
+        if (!id) {
+            continue;
+        }
+
+        map.set(
+            id,
+            session
+        );
+    }
+
+    return Array.from(
+        map.values()
+    ).sort(
+        (a, b) =>
+            getSessionTime(a) -
+            getSessionTime(b)
     );
 }
 
 
 /* =========================================================
-   REBUILD MEDIA STATS
+   MEDIA STAT HELPERS
+   ========================================================= */
+
+function createEmptyMediaStats() {
+    return {
+        totalWatchTime: 0,
+        totalViews: 0,
+        monthly: {},
+        monthlyViews: {}
+    };
+}
+
+function normalizeMediaStats(item) {
+    const source =
+        item &&
+        typeof item === "object"
+            ? item
+            : {};
+
+    const result =
+        createEmptyMediaStats();
+
+    result.totalWatchTime =
+        number(
+            source.totalWatchTime
+        );
+
+    result.totalViews =
+        number(
+            source.totalViews
+        );
+
+    if (
+        source.monthly &&
+        typeof source.monthly === "object"
+    ) {
+        Object.keys(
+            source.monthly
+        ).forEach(month => {
+            result.monthly[month] =
+                number(
+                    source.monthly[month]
+                );
+        });
+    }
+
+    if (
+        source.monthlyViews &&
+        typeof source.monthlyViews === "object"
+    ) {
+        Object.keys(
+            source.monthlyViews
+        ).forEach(month => {
+            result.monthlyViews[month] =
+                number(
+                    source.monthlyViews[month]
+                );
+        });
+    }
+
+    return result;
+}
+
+function cloneMedia(media) {
+    const result = {};
+
+    Object.keys(
+        media || {}
+    ).forEach(mediaId => {
+        result[mediaId] =
+            normalizeMediaStats(
+                media[mediaId]
+            );
+    });
+
+    return result;
+}
+
+
+/* =========================================================
+   MEDIA BASELINE
+   ========================================================= */
+
+/*
+   Older Archive versions already stored aggregated
+   media statistics.
+
+   We preserve those statistics as a one-time baseline.
+
+   New sessions are then added on top of that baseline.
+
+   This prevents repeated syncs from adding the same
+   sessions over and over again.
+*/
+
+function mergeBaselineMedia(
+    firstMedia,
+    secondMedia
+) {
+    const result =
+        cloneMedia(
+            firstMedia
+        );
+
+    Object.keys(
+        secondMedia || {}
+    ).forEach(mediaId => {
+        const incoming =
+            normalizeMediaStats(
+                secondMedia[mediaId]
+            );
+
+        if (!result[mediaId]) {
+            result[mediaId] =
+                createEmptyMediaStats();
+        }
+
+        /*
+           For migration/baseline data we use the larger
+           value rather than adding both copies.
+
+           This prevents an old local copy and old Firebase
+           copy from immediately doubling analytics.
+        */
+
+        result[mediaId].totalViews =
+            Math.max(
+                result[mediaId].totalViews,
+                incoming.totalViews
+            );
+
+        result[mediaId].totalWatchTime =
+            Math.max(
+                result[mediaId].totalWatchTime,
+                incoming.totalWatchTime
+            );
+
+        const months = new Set([
+            ...Object.keys(
+                result[mediaId].monthly
+            ),
+            ...Object.keys(
+                incoming.monthly
+            )
+        ]);
+
+        months.forEach(month => {
+            result[mediaId].monthly[month] =
+                Math.max(
+                    number(
+                        result[mediaId]
+                            .monthly[month]
+                    ),
+                    number(
+                        incoming
+                            .monthly[month]
+                    )
+                );
+        });
+
+        const viewMonths = new Set([
+            ...Object.keys(
+                result[mediaId]
+                    .monthlyViews
+            ),
+            ...Object.keys(
+                incoming
+                    .monthlyViews
+            )
+        ]);
+
+        viewMonths.forEach(month => {
+            result[mediaId]
+                .monthlyViews[month] =
+                Math.max(
+                    number(
+                        result[mediaId]
+                            .monthlyViews[month]
+                    ),
+                    number(
+                        incoming
+                            .monthlyViews[month]
+                    )
+                );
+        });
+    });
+
+    return result;
+}
+
+
+/* =========================================================
+   EXTRACT MEDIA CHANGES FROM CURRENT APP SESSION
+   ========================================================= */
+
+function getSessionMediaWatchTime(
+    session
+) {
+    if (!session) {
+        return {};
+    }
+
+    /*
+       Future-compatible structure.
+    */
+
+    if (
+        session.mediaWatchTime &&
+        typeof session.mediaWatchTime === "object"
+    ) {
+        return session.mediaWatchTime;
+    }
+
+    if (
+        session.media &&
+        typeof session.media === "object"
+    ) {
+        const result = {};
+
+        Object.keys(
+            session.media
+        ).forEach(mediaId => {
+            const item =
+                session.media[mediaId];
+
+            if (
+                typeof item === "number"
+            ) {
+                result[mediaId] =
+                    number(item);
+            } else if (
+                item &&
+                typeof item === "object"
+            ) {
+                result[mediaId] =
+                    number(
+                        item.time ||
+                        item.watchTime ||
+                        item.seconds
+                    );
+            }
+        });
+
+        return result;
+    }
+
+    return {};
+}
+
+function getSessionMediaViews(
+    session
+) {
+    if (!session) {
+        return {};
+    }
+
+    if (
+        session.mediaViews &&
+        typeof session.mediaViews === "object"
+    ) {
+        return session.mediaViews;
+    }
+
+    /*
+       Current Archive app stores the number of media
+       openings at session level, but does not yet store
+       which individual media was opened.
+
+       Therefore we do NOT guess here.
+
+       This prevents Firebase from assigning a session's
+       total opens to random media.
+    */
+
+    return {};
+}
+
+
+/* =========================================================
+   REBUILD MEDIA ANALYTICS
    ========================================================= */
 
 function rebuildMediaStats(
-    sessions,
-    oldRemoteMedia = {}
+    baselineMedia,
+    sessions
 ) {
-    const media = {};
-
-    /*
-     * First preserve old media data.
-     * This is important for analytics created by
-     * the previous version of Archive.
-     */
-
-    Object.keys(oldRemoteMedia || {}).forEach(
-        mediaId => {
-            const item =
-                oldRemoteMedia[mediaId];
-
-            if (!item) return;
-
-            media[mediaId] = {
-                ...item,
-                views:
-                    number(item.views),
-                time:
-                    number(item.time)
-            };
-        }
-    );
-
-
-    /*
-     * Rebuild statistics from sessions.
-     */
-
-    for (const session of sessions || []) {
-        if (!session) continue;
-
-        const sessionMedia =
-            session.media ||
-            session.mediaWatchTime ||
-            {};
-
-        const opened =
-            Array.isArray(session.mediaOpened)
-                ? session.mediaOpened
-                : [];
-
-
-        /*
-         * Watch time
-         */
-
-        Object.keys(sessionMedia).forEach(
-            mediaId => {
-                const value =
-                    sessionMedia[mediaId];
-
-                let watchTime = 0;
-
-                if (
-                    typeof value === "number"
-                ) {
-                    watchTime = value;
-                } else if (
-                    value &&
-                    typeof value === "object"
-                ) {
-                    watchTime =
-                        number(
-                            value.time ||
-                            value.watchTime ||
-                            value.seconds
-                        );
-                }
-
-                if (!media[mediaId]) {
-                    media[mediaId] = {
-                        views: 0,
-                        time: 0
-                    };
-                }
-
-                media[mediaId].time +=
-                    watchTime;
-            }
+    const media =
+        cloneMedia(
+            baselineMedia
         );
 
+    for (
+        const session
+        of sessions || []
+    ) {
+        if (!session) {
+            continue;
+        }
+
+        const monthKey =
+            session.date
+                ? String(
+                    session.date
+                ).slice(0, 7)
+                : null;
 
         /*
-         * Views / opens
-         */
+           -------------------------------------------------
+           WATCH TIME
+           -------------------------------------------------
+        */
 
-        opened.forEach(mediaId => {
-            const id = String(mediaId);
+        const watchTime =
+            getSessionMediaWatchTime(
+                session
+            );
 
-            if (!media[id]) {
-                media[id] = {
-                    views: 0,
-                    time: 0
-                };
+        Object.keys(
+            watchTime
+        ).forEach(mediaId => {
+            const seconds =
+                number(
+                    watchTime[mediaId]
+                );
+
+            if (seconds <= 0) {
+                return;
             }
 
-            media[id].views += 1;
+            if (!media[mediaId]) {
+                media[mediaId] =
+                    createEmptyMediaStats();
+            }
+
+            media[mediaId]
+                .totalWatchTime +=
+                seconds;
+
+            if (monthKey) {
+                media[mediaId]
+                    .monthly[monthKey] =
+                    number(
+                        media[mediaId]
+                            .monthly[monthKey]
+                    ) + seconds;
+            }
         });
 
 
         /*
-         * Some older session formats store
-         * media inside an object.
-         */
+           -------------------------------------------------
+           MEDIA VIEWS
+           -------------------------------------------------
+        */
 
-        if (
-            session.mediaStats &&
-            typeof session.mediaStats === "object"
-        ) {
-            Object.keys(
-                session.mediaStats
-            ).forEach(mediaId => {
-                const item =
-                    session.mediaStats[mediaId];
+        const mediaViews =
+            getSessionMediaViews(
+                session
+            );
 
-                if (!media[mediaId]) {
-                    media[mediaId] = {
-                        views: 0,
-                        time: 0
-                    };
-                }
+        Object.keys(
+            mediaViews
+        ).forEach(mediaId => {
+            const views =
+                number(
+                    mediaViews[mediaId]
+                );
 
-                media[mediaId].views +=
-                    number(item?.views);
+            if (views <= 0) {
+                return;
+            }
 
-                media[mediaId].time +=
-                    number(item?.time);
-            });
-        }
+            if (!media[mediaId]) {
+                media[mediaId] =
+                    createEmptyMediaStats();
+            }
+
+            media[mediaId]
+                .totalViews +=
+                views;
+
+            if (monthKey) {
+                media[mediaId]
+                    .monthlyViews[monthKey] =
+                    number(
+                        media[mediaId]
+                            .monthlyViews[monthKey]
+                    ) + views;
+            }
+        });
     }
-
 
     return media;
 }
 
 
 /* =========================================================
-   LOAD
+   LOAD FIREBASE ANALYTICS
    ========================================================= */
 
 async function loadFirebaseAnalytics() {
-    if (!firebaseReady || !db) {
+    if (
+        !firebaseReady ||
+        !db
+    ) {
         return null;
     }
 
@@ -340,7 +791,9 @@ async function loadFirebaseAnalytics() {
         }
 
         const snapshot =
-            await getDoc(reference);
+            await getDoc(
+                reference
+            );
 
         if (!snapshot.exists()) {
             return null;
@@ -349,7 +802,6 @@ async function loadFirebaseAnalytics() {
         return normalizeAnalytics(
             snapshot.data()
         );
-
     } catch (error) {
         console.error(
             "[Archive Firebase] Load failed:",
@@ -362,7 +814,7 @@ async function loadFirebaseAnalytics() {
 
 
 /* =========================================================
-   SAVE
+   DIRECT SAVE
    ========================================================= */
 
 async function saveFirebaseAnalytics(
@@ -397,11 +849,12 @@ async function saveFirebaseAnalytics(
         await setDoc(
             reference,
             data,
-            { merge: true }
+            {
+                merge: true
+            }
         );
 
         return true;
-
     } catch (error) {
         console.error(
             "[Archive Firebase] Save failed:",
@@ -414,30 +867,8 @@ async function saveFirebaseAnalytics(
 
 
 /* =========================================================
-   SYNC
+   MAIN SYNC
    ========================================================= */
-
-/*
- * This is the main function used by app.js.
- *
- * Important:
- *
- * We use a Firestore transaction.
- *
- * Device A + Device B can update at almost
- * the same time. Firestore retries the transaction
- * if the document changed while we were writing.
- *
- * Sessions are merged by session.id.
- *
- * Therefore:
- *
- * Device A session
- * +
- * Device B session
- *
- * = both remain in Firebase.
- */
 
 async function syncAnalytics(
     localAnalytics
@@ -447,14 +878,16 @@ async function syncAnalytics(
             localAnalytics
         );
 
-    if (!firebaseReady || !db) {
+    if (
+        !firebaseReady ||
+        !db
+    ) {
         return {
             success: false,
             source: "local",
             analytics: local
         };
     }
-
 
     try {
         const reference =
@@ -468,11 +901,15 @@ async function syncAnalytics(
             };
         }
 
-
-        const merged =
+        const result =
             await runTransaction(
                 db,
                 async transaction => {
+
+                    /*
+                       IMPORTANT:
+                       Only read Firestore inside the transaction.
+                    */
 
                     const snapshot =
                         await transaction.get(
@@ -481,71 +918,251 @@ async function syncAnalytics(
 
                     const remote =
                         snapshot.exists()
-                            ? normalizeAnalytics(
-                                snapshot.data()
-                            )
-                            : {
-                                version: 1,
-                                createdAt: null,
-                                updatedAt: null,
-                                sessions: [],
-                                media: {}
-                            };
+                            ? snapshot.data()
+                            : {};
+
+                    const remoteAnalytics =
+                        normalizeAnalytics(
+                            remote
+                        );
 
 
                     /*
-                     * Merge sessions.
-                     */
+                       -------------------------------------------------
+                       OWNED SESSION IDS
+                       -------------------------------------------------
+                    */
 
-                    const sessions =
-                        mergeSessions(
-                            remote.sessions,
+                    let ownedSessionIds =
+                        loadOwnedSessionIds();
+
+
+                    /*
+                       First Firebase sync:
+                       Existing local sessions belong to this device.
+                    */
+
+                    if (
+                        ownedSessionIds.length === 0 &&
+                        local.sessions.length > 0
+                    ) {
+                        ownedSessionIds =
                             local.sessions
+                                .map(
+                                    getSessionId
+                                )
+                                .filter(Boolean);
+
+                        saveOwnedSessionIds(
+                            ownedSessionIds
+                        );
+                    }
+
+
+                    /*
+                       -------------------------------------------------
+                       CURRENT DEVICE SESSIONS
+                       -------------------------------------------------
+                    */
+
+                    const ownedSet =
+                        new Set(
+                            ownedSessionIds
+                        );
+
+                    const localOwnedSessions =
+                        local.sessions.filter(
+                            session => {
+                                const id =
+                                    getSessionId(
+                                        session
+                                    );
+
+                                return (
+                                    id &&
+                                    ownedSet.has(
+                                        id
+                                    )
+                                );
+                            }
                         );
 
 
                     /*
-                     * Rebuild media statistics.
-                     */
+                       -------------------------------------------------
+                       REMOTE SESSIONS
+                       -------------------------------------------------
+                    */
 
-                    const media =
-                        rebuildMediaStats(
-                            sessions,
-                            remote.media
+                    const remoteSessions =
+                        Array.isArray(
+                            remoteAnalytics.sessions
+                        )
+                            ? remoteAnalytics.sessions
+                            : [];
+
+
+                    /*
+                       Remote sessions which belong to other devices
+                       are retained.
+
+                       Sessions from this device are replaced by the
+                       latest local copy.
+                    */
+
+                    const otherDeviceSessions =
+                        remoteSessions.filter(
+                            session => {
+                                const id =
+                                    getSessionId(
+                                        session
+                                    );
+
+                                return (
+                                    !id ||
+                                    !ownedSet.has(
+                                        id
+                                    )
+                                );
+                            }
                         );
 
 
-                    const result = {
-                        version: 1,
+                    const mergedSessions =
+                        mergeSessions(
+                            otherDeviceSessions,
+                            localOwnedSessions
+                        );
 
-                        createdAt:
-                            remote.createdAt ||
-                            local.createdAt ||
-                            Date.now(),
+
+                    /*
+                       -------------------------------------------------
+                       BASELINE MEDIA
+                       -------------------------------------------------
+                    */
+
+                    let baselineMedia = {};
+
+
+                    /*
+                       New migration:
+                       Preserve existing Firebase media statistics.
+                    */
+
+                    if (
+                        remote &&
+                        remote.mediaBaseline &&
+                        typeof remote.mediaBaseline === "object"
+                    ) {
+                        baselineMedia =
+                            cloneMedia(
+                                remote.mediaBaseline
+                            );
+                    } else {
+                        baselineMedia =
+                            mergeBaselineMedia(
+                                remoteAnalytics.media,
+                                local.media
+                            );
+                    }
+
+
+                    /*
+                       -------------------------------------------------
+                       REBUILD MEDIA
+                       -------------------------------------------------
+                    */
+
+                    const rebuiltMedia =
+                        rebuildMediaStats(
+                            baselineMedia,
+                            mergedSessions
+                        );
+
+
+                    /*
+                       -------------------------------------------------
+                       FINAL ANALYTICS
+                       -------------------------------------------------
+                    */
+
+                    const createdAt =
+                        remoteAnalytics.createdAt ||
+                        local.createdAt ||
+                        new Date().toISOString();
+
+
+                    const finalAnalytics = {
+                        version: 3,
+
+                        createdAt,
 
                         updatedAt:
-                            Date.now(),
+                            new Date().toISOString(),
 
-                        sessions,
+                        sessions:
+                            mergedSessions,
 
-                        media
+                        media:
+                            rebuiltMedia
+                    };
+
+
+                    /*
+                       -------------------------------------------------
+                       SAVE
+                       -------------------------------------------------
+                    */
+
+                    const firestoreData = {
+                        version: 3,
+
+                        createdAt,
+
+                        updatedAt:
+                            serverTimestamp(),
+
+                        sessions:
+                            clean(
+                                mergedSessions
+                            ),
+
+                        media:
+                            clean(
+                                rebuiltMedia
+                            ),
+
+                        /*
+                           Keep migration baseline separately.
+
+                           This is the key protection against
+                           double-counting repeated syncs.
+                        */
+
+                        mediaBaseline:
+                            clean(
+                                baselineMedia
+                            ),
+
+                        /*
+                           Helpful metadata.
+                        */
+
+                        lastSyncDevice:
+                            DEVICE_ID
                     };
 
 
                     transaction.set(
                         reference,
-                        {
-                            ...clean(result),
-                            updatedAt:
-                                serverTimestamp()
-                        },
+                        firestoreData,
                         {
                             merge: true
                         }
                     );
 
 
-                    return result;
+                    return finalAnalytics;
                 }
             );
 
@@ -555,22 +1172,42 @@ async function syncAnalytics(
         );
 
 
+        /*
+           Keep all session IDs currently visible locally
+           as sessions belonging to this device.
+
+           This is especially important after the first sync,
+           because app.js receives the combined Firebase analytics.
+        */
+
+        const allLocalIds =
+            local.sessions
+                .map(
+                    getSessionId
+                )
+                .filter(Boolean);
+
+        const knownOwnedIds =
+            loadOwnedSessionIds();
+
+        saveOwnedSessionIds([
+            ...knownOwnedIds,
+            ...allLocalIds
+        ]);
+
+
         return {
             success: true,
             source: "firebase",
-            analytics: merged
+            analytics: result
         };
 
     } catch (error) {
+
         console.error(
             "[Archive Firebase] Sync failed:",
             error
         );
-
-        /*
-         * Firebase failure should NEVER
-         * break the Archive viewer.
-         */
 
         return {
             success: false,
@@ -582,7 +1219,7 @@ async function syncAnalytics(
 
 
 /* =========================================================
-   SAVE SINGLE SESSION
+   SAVE SESSION
    ========================================================= */
 
 async function saveFirebaseSession(
@@ -593,27 +1230,49 @@ async function saveFirebaseSession(
         return false;
     }
 
-
-    /*
-     * Prefer the normal sync path.
-     *
-     * This keeps the same session ID and
-     * prevents duplicate sessions.
-     */
-
     const analytics =
         normalizeAnalytics(
             currentAnalytics
         );
 
 
-    if (
-        !analytics.sessions.some(
+    /*
+       Remember this session as belonging to this device.
+    */
+
+    const sessionId =
+        getSessionId(
+            session
+        );
+
+    if (sessionId) {
+        const ids =
+            loadOwnedSessionIds();
+
+        if (!ids.includes(sessionId)) {
+            ids.push(sessionId);
+            saveOwnedSessionIds(ids);
+        }
+    }
+
+
+    /*
+       Add/update local session.
+    */
+
+    const existingIndex =
+        analytics.sessions.findIndex(
             item =>
                 item &&
-                item.id === session.id
-        )
-    ) {
+                getSessionId(item) ===
+                sessionId
+        );
+
+    if (existingIndex >= 0) {
+        analytics.sessions[
+            existingIndex
+        ] = session;
+    } else {
         analytics.sessions.push(
             session
         );
@@ -637,14 +1296,14 @@ async function saveFirebaseSession(
 
 window.ArchiveFirebase = {
 
-    isReady:
-        () => firebaseReady,
+    isReady: () =>
+        firebaseReady,
 
-    getApp:
-        () => firebaseApp,
+    getApp: () =>
+        firebaseApp,
 
-    getDB:
-        () => db,
+    getDB: () =>
+        db,
 
     loadAnalytics:
         loadFirebaseAnalytics,
@@ -652,8 +1311,7 @@ window.ArchiveFirebase = {
     saveAnalytics:
         saveFirebaseAnalytics,
 
-    syncAnalytics:
-        syncAnalytics,
+    syncAnalytics,
 
     saveSession:
         saveFirebaseSession
@@ -661,7 +1319,7 @@ window.ArchiveFirebase = {
 
 
 /* =========================================================
-   NAMED EXPORTS
+   EXPORTS
    ========================================================= */
 
 export {
